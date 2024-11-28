@@ -47,7 +47,29 @@ class ServerDB:
 
     def __getConnection(self):
         return sql3.connect(self.DBPATH)
+    
 
+    async def validate_user(self,username:str,password:str) -> bool:
+        query = """SELECT 1
+                FROM Users u 
+                WHERE u.username=? AND u.password=?;
+                """
+        
+        async with self.lock:
+            try:
+                con = self.__getConnection()
+                cur = con.execute(query, (username,password))
+                user = cur.fetchone()
+                if user:
+                    return True
+                else:
+                    
+                    return False
+
+            except sql3.Error as e :
+                print(f"validate_user {username} : {e}")
+                return False
+            
     async def add_permission(self, name: str, read: bool, write: bool):
         query = """
                 INSERT INTO Permission (name,read,write) 
@@ -142,8 +164,10 @@ async def main():
     db = ServerDB()
     await db.add_permission("restricted", True, False)
     await db.add_user("ehsan", "123456", "user")
+    await db.add_user("mohammad", "12345678", "admin")
     print(await db.get_user_by_username("ehsan"))
     print(await db.get_user_by_id(1))
+    print(await db.validate_user("ehsan","1234"))
 
 if __name__ == "__main__":
     asyncio.run(main())
