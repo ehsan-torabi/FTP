@@ -5,7 +5,6 @@ op_lock = thr.Lock()
 
 def getData(soc): 
     while True:
-        op_lock.acquire()
         data = soc.recv(1024)
         if data:
             print(data.decode(),end="")
@@ -13,6 +12,7 @@ def getData(soc):
 
 def sendData(soc):
     while True:
+        op_lock.acquire()
         soc.sendall(input().encode())
         op_lock.release()
 
