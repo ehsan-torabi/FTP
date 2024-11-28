@@ -1,6 +1,10 @@
 import asyncio
+import os
 import threading
 import socket
+import sys
+sys.path.append(os.path.curdir)
+from Server.util import command_manage
 
 
 class server:
@@ -22,25 +26,23 @@ class server:
         return sock
 
 
-def readConnection(con:socket.socket):
+def readConnection(conn:socket.socket,addr):
     while True:
-        data = con.recv(2048)
+        data = conn.recv(2048)
         if data.decode().strip().lower() == "quit":
-            con.close()
+            conn.close()
             break
-        con.sendall("OK".encode())
+        command_manage.command_parser(data.decode(),conn,addr)
 
 def main():
     with server(8021).startServer() as srv:
         while True:
             try:
-                con, addr = srv.accept()
+                conn, addr = srv.accept()
             except:
                 continue
-            threading.Thread(target=readConnection,args=(con,),daemon=False).start() 
+            threading.Thread(target=readConnection,args=(conn,addr),daemon=False).start() 
             
-
-
 
 
 if __name__ == "__main__":
