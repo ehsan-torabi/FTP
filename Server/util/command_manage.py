@@ -1,16 +1,18 @@
 import asyncio
 from socket import socket
+from Server.util import help_handler
 from Server.util.db_manage import ServerDB
 
 
 loggedInUsers = []
-commandList = ["login", "upload", "download", "mkdir","rmdir", "cd", "resume", "rename", "list"]
+commandList = ["login", "upload", "download", "mkdir","rmdir", "cd", "resume", "rename", "list","help"]
 
 
 def command_parser(line: str, conn,addr):
     line_splited = line.strip().split(" ")
     command = line_splited[0].lower()
-    if len(line_splited) <= 1:
+    exclude_len_condition = ["help"]
+    if len(line_splited) <= 1 and command not in exclude_len_condition:
         conn.sendall(f"Plese enter full args for {command.upper()} command\n".encode())
         return
     elif command not in commandList:
@@ -37,7 +39,7 @@ def command_parser(line: str, conn,addr):
         case "list":
             pass
         case "help":
-            pass
+            help_handler.show_help(conn)
 
 
 async def login_handler(args: list, conn:socket,addr):
