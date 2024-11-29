@@ -1,12 +1,11 @@
-from asyncio import Lock
-import asyncio
+from threading import Lock
 import os
 import sqlite3 as sql3
 
 
 class ServerDB:
     def __init__(self) -> None:
-        self.DBPATH = "./db.sqlite"
+        self.DBPATH =  os.path.abspath("../db.sqlite")
         self.lock = Lock()
         query = """
         PRAGMA foreign_keys = ON;
@@ -49,13 +48,13 @@ class ServerDB:
         return sql3.connect(self.DBPATH)
     
 
-    async def validate_user(self,username:str,password:str) -> bool:
+    def validate_user(self,username:str,password:str) -> bool:
         query = """SELECT 1
                 FROM Users u 
-                WHERE u.username=? AND u.password=?;
+                WHERE u.username= ? AND u.password= ?;
                 """
         
-        async with self.lock:
+        with self.lock:
             try:
                 con = self.__getConnection()
                 cur = con.execute(query, (username,password))
@@ -63,20 +62,19 @@ class ServerDB:
                 if user:
                     return True
                 else:
-                    
                     return False
 
             except sql3.Error as e :
                 print(f"validate_user {username} : {e}")
                 return False
             
-    async def add_permission(self, name: str, read: bool, write: bool):
+    def add_permission(self, name: str, read: bool, write: bool):
         query = """
                 INSERT INTO Permission (name,read,write) 
                 VALUES (?,?,?);
                 """
         
-        async with self.lock:
+        with self.lock:
             con = self.__getConnection()
             try:
                 con.execute(query, (name, read, write))
@@ -86,13 +84,13 @@ class ServerDB:
             finally:
                 con.close()
 
-    async def add_user(self, username, password, role, perm_name="restricted"):
+    def add_user(self, username, password, role, perm_name="restricted"):
         query = """
                 INSERT INTO users (username,password,role,permName) 
                 VALUES (?,?,?,?);
                 """
         
-        async with self.lock:
+        with self.lock:
             con = self.__getConnection()
             try:
                 con.execute(query, (username, password, role, perm_name))
@@ -103,13 +101,13 @@ class ServerDB:
             finally:
                 con.close()
 
-    async def get_user_by_username(self, username) -> dict:
+    def get_user_by_username(self, username) -> dict:
         query = """SELECT username , role , permName , read , write
                 FROM Users u  RIGHT JOIN Permission p ON u.permName=p.name 
                 WHERE u.username=?;
                 """
         
-        async with self.lock:
+        with self.lock:
             try:
                 con = self.__getConnection()
                 cur = con.execute(query, (username,))
@@ -130,14 +128,14 @@ class ServerDB:
                 print(f"get_user_by_username {username} : {e}")
                 return None
             
-    async def get_user_by_id(self, id) -> dict:
+    def get_user_by_id(self, id) -> dict:
         query = """
                 SELECT username , role , permName , read , write
                 FROM Users u  RIGHT JOIN Permission p ON u.permName=p.name 
                 WHERE u.id=?;
                 """
         
-        async with self.lock:
+        with self.lock:
             con = self.__getConnection()
             try:
                 id = str(id)
@@ -160,14 +158,14 @@ class ServerDB:
                 return None
 
 
-async def main():
+def main():
     db = ServerDB()
-    await db.add_permission("restricted", True, False)
-    await db.add_user("ehsan", "123456", "user")
-    await db.add_user("mohammad", "12345678", "admin")
-    print(await db.get_user_by_username("ehsan"))
-    print(await db.get_user_by_id(1))
-    print(await db.validate_user("ehsan","1234"))
+    db.add_permission("restricted", True, False)
+    db.add_user("ehsan", "123456", "user")
+    db.add_user("mohammad", "12345678", "admin")
+    print(db.get_user_by_username("ehsan"))
+    print(db.get_user_by_id(1))
+    print(db.validate_user("ehsan","123456"))
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
