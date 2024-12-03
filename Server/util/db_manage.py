@@ -1,11 +1,11 @@
-from threading import Lock
 import os
 import sqlite3 as sql3
+from threading import Lock
 
 
 class ServerDB:
     def __init__(self) -> None:
-        self.DBPATH =  os.path.abspath("../db.sqlite")
+        self.DBPATH = os.path.abspath("../db.sqlite")
         self.lock = Lock()
         query = """
         PRAGMA foreign_keys = ON;
@@ -26,54 +26,52 @@ class ServerDB:
         ON DELETE SET DEFAULT
         ON UPDATE CASCADE
         );"""
-        
+
         if not os.path.exists(self.DBPATH):
-                print("DB Not found!\nI'v create new.")
-                dbConnection = sql3.connect(self.DBPATH)
-                cursur = dbConnection.cursor()
-                for  q in query.split(";"):
-                    if len(q) > 1:
-                        cursur.execute(q)
-                        print("Executeed: ",q.strip())
-                print("DB Created and connected.")
-                dbConnection.close()
+            print("DB Not found!\nI'v create new.")
+            dbConnection = sql3.connect(self.DBPATH)
+            cursur = dbConnection.cursor()
+            for q in query.split(";"):
+                if len(q) > 1:
+                    cursur.execute(q)
+                    print("Executeed: ", q.strip())
+            print("DB Created and connected.")
+            dbConnection.close()
 
         else:
-                dbConnection = sql3.connect(self.DBPATH)
-                dbConnection.close()
-                print("DB Connected.")
-        
+            dbConnection = sql3.connect(self.DBPATH)
+            dbConnection.close()
+            print("DB Connected.")
 
     def __getConnection(self):
         return sql3.connect(self.DBPATH)
-    
 
-    def validate_user(self,username:str,password:str) -> bool:
+    def validate_user(self, username: str, password: str) -> bool:
         query = """SELECT 1
                 FROM Users u 
                 WHERE u.username= ? AND u.password= ?;
                 """
-        
+
         with self.lock:
             try:
                 con = self.__getConnection()
-                cur = con.execute(query, (username,password))
+                cur = con.execute(query, (username, password))
                 user = cur.fetchone()
                 if user:
                     return True
                 else:
                     return False
 
-            except sql3.Error as e :
+            except sql3.Error as e:
                 print(f"validate_user {username} : {e}")
                 return False
-            
+
     def add_permission(self, name: str, read: bool, write: bool):
         query = """
                 INSERT INTO Permission (name,read,write) 
                 VALUES (?,?,?);
                 """
-        
+
         with self.lock:
             con = self.__getConnection()
             try:
@@ -89,14 +87,14 @@ class ServerDB:
                 INSERT INTO users (username,password,role,permName) 
                 VALUES (?,?,?,?);
                 """
-        
+
         with self.lock:
             con = self.__getConnection()
             try:
                 con.execute(query, (username, password, role, perm_name))
                 con.commit()
             except sql3.IntegrityError as e:
-                print(f"add_user{username,password} : This field is exists!")
+                print(f"add_user{username, password} : This field is exists!")
 
             finally:
                 con.close()
@@ -106,7 +104,7 @@ class ServerDB:
                 FROM Users u  RIGHT JOIN Permission p ON u.permName=p.name 
                 WHERE u.username=?;
                 """
-        
+
         with self.lock:
             try:
                 con = self.__getConnection()
@@ -124,17 +122,17 @@ class ServerDB:
                     print(f"User ({username}) not valid!")
                     return None
 
-            except sql3.Error as e :
+            except sql3.Error as e:
                 print(f"get_user_by_username {username} : {e}")
                 return None
-            
+
     def get_user_by_id(self, id) -> dict:
         query = """
                 SELECT username , role , permName , read , write
                 FROM Users u  RIGHT JOIN Permission p ON u.permName=p.name 
                 WHERE u.id=?;
                 """
-        
+
         with self.lock:
             con = self.__getConnection()
             try:
@@ -149,7 +147,7 @@ class ServerDB:
                         "read": bool(user[3]),
                         "write": bool(user[4]),
                     }
-                else :
+                else:
                     print(f"ID ({id}) not valid!")
                     return None
 
@@ -165,7 +163,8 @@ def main():
     db.add_user("mohammad", "12345678", "admin")
     print(db.get_user_by_username("ehsan"))
     print(db.get_user_by_id(1))
-    print(db.validate_user("ehsan","123456"))
+    print(db.validate_user("ehsan", "123456"))
+
 
 if __name__ == "__main__":
     main()
