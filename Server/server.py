@@ -1,9 +1,12 @@
 import os
 import socket
+import sys
 import threading
-from Server.util import command_manage
 
-SERVER_PUBLIC_PATH = os.path.abspath("../Public")
+from Server.util import server_command
+
+SERVER_START_PATH = os.path.abspath("../Public")
+
 
 class Server:
     def __init__(self, port) -> None:
@@ -24,13 +27,20 @@ class Server:
 
 
 def read_connection(conn: socket.socket, addr):
-    conn.send("[+] You are connected.\nUse help to see commands.\n".encode())
     print(f"[+] User connected: {addr}")
     while True:
-        data = conn.recv(1024)
-        if not data:
-            break
-        command_manage.command_parser(data.decode(), conn, addr)
+        try:
+            data = conn.recv(1024)
+            if not data:
+                break
+
+            server_command.command_parser(data, conn, addr)
+        except ConnectionResetError:
+            conn.close()
+            return
+        # except Exception as e:
+        #     tb = sys.exception().__traceback__
+        #     print(f"[-] {e.args}")
 
 
 def main():
@@ -38,12 +48,16 @@ def main():
         while True:
             try:
                 conn, addr = srv.accept()
+            except KeyboardInterrupt:
+                print("Server stopped.")
+                srv.close()
+                conn.shutdown(socket.SHUT_RDWR)
+                exit(0)
             except Exception as e:
                 print(f"Error accepting connection: {e}")
                 continue
             t = threading.Thread(target=read_connection, args=(conn, addr))
             t.start()
-
 
 
 if __name__ == "__main__":

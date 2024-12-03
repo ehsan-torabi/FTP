@@ -1,31 +1,26 @@
+import os
 import socket as s
-import threading as thr
-from utils import send_file
+import sys
 
-def get_data(usr_socket):
-    while True:
-        data = usr_socket.recv(1024)
-        if not data:
-            break
-        print(data.decode(), end="")
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from Client.util.client_command import command_parser
 
-def send_data(usr_socket):
+
+def start_cycle(usr_socket):
     while True:
-        user_input = input()
-        args = user_input.split(" ")[1:]
-        usr_socket.sendall(user_input.encode())
-        if user_input.lower().startswith("upload"):
-            send_file.upload_file(usr_socket, args[0])
-        if user_input.lower().startswith("quit"):
-            usr_socket.shutdown(0)
-            return
+        try:
+            user_input = input("ftp> ")
+            command_parser(user_input, usr_socket)
+        except TimeoutError:
+            print("Timeout Error\nCheck your connection")
+
 
 port = input("Enter Port: ")
-with s.socket(s.AF_INET, s.SOCK_STREAM) as soc:
-    soc.connect(('', int(port)))
-    t1 = thr.Thread(target=get_data, args=(soc,))
-    t2 = thr.Thread(target=send_data, args=(soc,))
-    t1.start()
-    t2.start()
-    t1.join()
-    t2.join()
+try:
+    with s.socket(s.AF_INET, s.SOCK_STREAM) as soc:
+        soc.connect(('', int(port)))
+        # soc.settimeout(1)
+        print("[+] You are connected.\nUse 'help' to see commands.")
+        start_cycle(soc)
+except KeyboardInterrupt:
+    print("\nPlease use 'exit' or 'quit' to quit.")
