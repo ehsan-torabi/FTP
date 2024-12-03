@@ -2,4 +2,3 @@
 *.sqlite
 .vscode/*
 *.pyc
-Public/*
