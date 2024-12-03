@@ -10,3 +10,7 @@ class StandardResponse:
     def serialize(self):
         query_data = {"accept": self.accept, "status_code": self.status_code, "data": self.data}
         return json.dumps(query_data, ensure_ascii=False)
+
+    def serialize_and_send(self,connection):
+        serialized = self.serialize()
+        connection.send(serialized.encode('utf-8'))

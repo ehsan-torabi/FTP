@@ -36,8 +36,7 @@ def command_parser(user_input, user_socket):
         case "cd":
             change_dir_handler(user_socket,user_command,args)
         case "dir":
-            request = StandardQuery("1234", user_command, current_dir, command_args=args).serialize()
-            user_socket.send(request.encode("utf-8"))
+            StandardQuery("1234", user_command, current_dir, command_args=args).serialize_and_send(user_socket)
             response = rp.server_response_parser(user_socket.recv(1024))
             print(response["data"]["directory_path"])
         case "resume":
@@ -48,14 +47,13 @@ def command_parser(user_input, user_socket):
             list_handler(user_socket,user_command,args)
         case "help":
             show_help()
-        case "quit" | "quit":
+        case "quit" | "exit":
             user_socket.close()
             exit(0)
 
 
 def list_handler(user_socket,user_command,args):
-    request = StandardQuery("1234", user_command, current_dir, command_args=args).serialize()
-    user_socket.send(request.encode("utf-8"))
+    StandardQuery("1234", user_command, current_dir, command_args=args).serialize_and_send(user_socket)
     response = rp.server_response_parser(user_socket.recv(4096))
     if response["accept"]:
         print(response["data"])
@@ -66,8 +64,7 @@ def list_handler(user_socket,user_command,args):
 
 def change_dir_handler(user_socket,user_command,args):
     global current_dir
-    request = StandardQuery("1234", user_command, current_dir, command_args=args).serialize()
-    user_socket.send(request.encode("utf-8"))
+    StandardQuery("1234", user_command, current_dir, command_args=args).serialize_and_send(user_socket)
     response = rp.server_response_parser(user_socket.recv(1024))
     if response["accept"]:
         if response["status_code"] == FTPStatus.CHANGE_DIRECTORY_ACCEPTED:

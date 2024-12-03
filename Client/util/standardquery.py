@@ -27,3 +27,6 @@ class StandardQuery:
         query_dict["current_dir"] = self.current_dir
         query_dict["data"] = self.data
         return json.dumps(query_dict, ensure_ascii=False)
+    def serialize_and_send(self,connection):
+        serialized = self.serialize()
+        connection.send(serialized.encode('utf-8'))

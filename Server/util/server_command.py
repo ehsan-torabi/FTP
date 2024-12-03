@@ -28,17 +28,14 @@ def user_request_process(data, conn):
     try:
         command = code_command_dict[command]
     except KeyError:
-        response = StandardResponse(accept=False, status_code=FTPSTATUS.COMMAND_NOT_IMPLEMENTED).serialize()
-        conn.send(response.encode())
+        StandardResponse(accept=False, status_code=FTPSTATUS.COMMAND_NOT_IMPLEMENTED).serialize_and_send(conn)
     args = user_request["command_args"]
     user_current_directory = user_request["current_dir"]
     if command not in command_list:
-        response = StandardResponse(accept=False, status_code=FTPSTATUS.COMMAND_NOT_IMPLEMENTED).serialize()
-        conn.send(response.encode())
+        StandardResponse(accept=False, status_code=FTPSTATUS.COMMAND_NOT_IMPLEMENTED).serialize_and_send(conn)
         return None,None,None
     if not user_current_directory:
-        response = StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize()
-        conn.send(response.encode())
+        StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
         return None,None,None
     return command,args,user_current_directory
 
@@ -63,8 +60,7 @@ def command_parser(data, conn, addr):
             change_dir_handler(args, user_current_directory,conn)
         case "dir":
             data = {"directory_path": os.path.abspath(user_current_directory)}
-            response = StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK,data=data).serialize()
-            conn.sendall(response.encode("utf-8"))
+            StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK,data=data).serialize_and_send(conn)
         case "resume":
             pass
         case "rename":
@@ -72,9 +68,8 @@ def command_parser(data, conn, addr):
         case "list" | "ls":
             list_handler(args, user_current_directory,conn)
         case _:
-            response = StandardResponse(accept=False,
-                                        status_code=FTPSTATUS.SYNTAX_ERROR_COMMAND_UNRECOGNIZED).serialize()
-            conn.sendall(response.encode("utf-8"))
+            StandardResponse(accept=False,
+                                        status_code=FTPSTATUS.SYNTAX_ERROR_COMMAND_UNRECOGNIZED).serialize_and_send(conn)
 
 
 def login_handler(args: list, conn: socket, addr):
@@ -113,8 +108,8 @@ def list_handler(args: dict[str:str],user_current_dir:str, conn: socket):
             dir_path = str(pathlib.Path(user_current_dir).parent)
 
     if not os.path.isdir(dir_path):
-        response = StandardResponse(accept=False, status_code=FTPSTATUS.PATH_NOT_DIRECTORY).serialize()
-        conn.sendall(response.encode("utf-8"))
+        StandardResponse(accept=False, status_code=FTPSTATUS.PATH_NOT_DIRECTORY).serialize_and_send(conn)
+
         return
     ls = os.listdir(dir_path)
     body = ""
@@ -122,8 +117,7 @@ def list_handler(args: dict[str:str],user_current_dir:str, conn: socket):
         body += f"{obj:30s}\t"
         if num % 6 == 0:
             body += "\n"
-    response = StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK,data=body).serialize()
-    conn.sendall(response.encode("utf-8"))
+    StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK,data=body).serialize_and_send(conn)
 
 
 def change_dir_handler(args: dict[str:str],user_current_dir:str, conn: socket):
@@ -134,8 +128,7 @@ def change_dir_handler(args: dict[str:str],user_current_dir:str, conn: socket):
             dir_path = str(pathlib.Path(user_current_dir).parent)
 
     if os.path.isdir(dir_path):
-        response = StandardResponse(accept=True, status_code=FTPSTATUS.CHANGE_DIRECTORY_ACCEPTED,data={"current_directory":dir_path}).serialize()
-        conn.sendall(response.encode("utf-8"))
+        StandardResponse(accept=True, status_code=FTPSTATUS.CHANGE_DIRECTORY_ACCEPTED,data={"current_directory":dir_path}).serialize_and_send(conn)
+
     else:
-        response = StandardResponse(accept=False, status_code=FTPSTATUS.PATH_NOT_DIRECTORY).serialize()
-        conn.sendall(response.encode("utf-8"))
+        StandardResponse(accept=False, status_code=FTPSTATUS.PATH_NOT_DIRECTORY).serialize_and_send(conn)
