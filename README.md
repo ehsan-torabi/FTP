@@ -54,7 +54,7 @@ This project implements a simple FTP (File Transfer Protocol) server and client,
 - `login <username@password>`: Authenticate the user.
 - `upload <filename>`: Upload a file to the server.
 - `download <filename>`: Download a file from the server.
-- `resume` : Resume failed downloaded file.
+- `resume` : Resume last failed downloaded file (Stored in client-side).
 - `mkdir <directory_name>`: Create a new directory on the server.
 - `rmdir <directory_name>`: Remove a directory from the server.
 - `cd <directory_name>`: Change the current working directory.
