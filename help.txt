@@ -1,0 +1,19 @@
+Available Commands:
+
+    1. login username@password          - Authenticate with the FTP server.
+    2. upload <filename>                - Upload a file to the server.
+    3. download <filename>              - Download a file from the server.
+    4. mkdir <dir_name>                 - Create a new directory on the server.
+    5. rmdir <dir_name>                 - Remove a directory from the server.
+    6. rm <filename>                    - Delete a file from the server.
+    7. cd <dir_name>                    - Change the current working directory.
+    8. dir                              - Path of the current directory(On server).
+    9. cwd                              - Path of the current directory(On local).
+    9. resume                           - Resume a previously interrupted file transfer (not implemented).
+    10. rename <old_name> <new_name>    - Rename a file on the server.
+    11. list or ls                      - List files in the current directory.
+    12. help                            - Show this help message.
+    13. quit or exit                    - Close the connection and exit the client.
+
+    Usage:
+    Type the command followed by any required arguments.

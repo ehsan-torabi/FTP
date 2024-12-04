@@ -26,6 +26,8 @@ class FTPStatusCode:
     FILE_UNAVAILABLE = 450
     LOCAL_ERROR_IN_PROCESSING = 451
     INSUFFICIENT_STORAGE_SPACE = 452
+    FILE_EXISTS_ERROR = 453
+    PERMISSION_DENIED = 454
     SYNTAX_ERROR_COMMAND_UNRECOGNIZED = 500
     SYNTAX_ERROR_IN_PARAMETERS = 501
     COMMAND_NOT_IMPLEMENTED = 502
@@ -84,6 +86,8 @@ def get_ftp_status_message(code):
         FTPStatusCode.REQUESTED_ACTION_NOT_TAKEN_FILE_NAME_NOT_ALLOWED: "Action not taken, name not allowed.",
         FTPStatusCode.PATH_NOT_DIRECTORY: "Path not directory.",
         FTPStatusCode.CHANGE_DIRECTORY_ACCEPTED: "Change directory accepted.",
+        FTPStatusCode.FILE_EXISTS_ERROR: "File already exists.",
+        FTPStatusCode.PERMISSION_DENIED: "Permission denied.",
 
     }
     return status_messages.get(code, "Unknown status code.")

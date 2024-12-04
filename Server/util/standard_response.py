@@ -1,3 +1,4 @@
+import bz2
 import json
 
 
@@ -11,6 +12,9 @@ class StandardResponse:
         query_data = {"accept": self.accept, "status_code": self.status_code, "data": self.data}
         return json.dumps(query_data, ensure_ascii=False)
 
-    def serialize_and_send(self,connection):
+    def serialize_and_send(self, connection):
         serialized = self.serialize()
-        connection.send(serialized.encode('utf-8'))
+        print(len(serialized.encode("utf8")))
+        compressed = bz2.compress(serialized.encode("utf-8"), compresslevel=1)
+        print(len(compressed))
+        connection.sendall(compressed)
