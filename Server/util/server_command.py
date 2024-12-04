@@ -53,6 +53,9 @@ def send_syntax_error(conn):
     StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
 
 
+
+
+
 def command_parser(data, conn, addr):
     """Parse and execute the command received from the user."""
     command, args, user_current_directory, data = user_request_process(data, conn)
@@ -68,9 +71,7 @@ def command_parser(data, conn, addr):
         "rename": lambda: rename_handler(args, user_current_directory, conn),
         "list": lambda: list_handler(args, user_current_directory, data, conn),
         "ls": lambda: list_handler(args, user_current_directory, data, conn),
-        # Add placeholders for unimplemented commands
-        "mkdir": lambda:
-        "pass",
+        "mkdir": lambda: mkdir_handler(args, user_current_directory, conn),
         "rmdir": lambda:
         "pass",
         "rm": lambda:
@@ -146,6 +147,24 @@ def list_handler(args: dict[str: str], user_current_dir: str, request_data, conn
         body += "\n"
 
     StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK, data=body).serialize_and_send(conn)
+
+
+def mkdir_handler(args, user_current_directory, conn):
+    """Make a directory."""
+    try:
+        dir_path = address_process(user_current_directory, args["0"])
+        os.mkdir(dir_path)
+        StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
+    except PermissionError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.PERMISSION_DENIED).serialize_and_send(conn)
+    except KeyError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
+    except FileExistsError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.FILE_EXISTS_ERROR).serialize_and_send(conn)
+    except Exception as e:
+        StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
+            conn)
+
 
 
 def change_dir_handler(args: dict[str: str], user_current_dir: str, conn: socket):

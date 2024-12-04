@@ -101,7 +101,14 @@ def handle_response(user_socket, field: str):
 
 
 def make_dir_handler(user_socket, args):
-    pass
+    """Make a directory on the server."""
+    query = StandardQuery("1234", "mkdir", current_server_dir, command_args=args)
+    query.serialize_and_send(user_socket)
+    response = rp.server_response_parser(user_socket.recv(4096))
+    if response["accept"]:
+        print("Renamed successfully.")
+    else:
+        handle_error(response)
 
 
 def remove_dir_handler(user_socket, args):
