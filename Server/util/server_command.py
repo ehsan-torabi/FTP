@@ -73,6 +73,30 @@ def download_handler(args, user_current_directory, conn):
             conn)
 
 
+def upload_handler(args,data, user_current_directory, conn):
+    try:
+        dir_path = user_current_directory
+        if len(args) > 1:
+            dir_path = address_process(user_current_directory, args["1"])
+        file_name = os.path.basename(data["file_path"])
+        StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
+        rec_result = receive_file.retrieve_file(dir_path, data["transmit_port"], file_name, data["file_size"], data["buffer_size"],
+                                   data["checksum"], False)
+        if rec_result:
+            StandardResponse(accept=True, status_code=FTPSTATUS.REQUESTED_FILE_ACTION_OK).serialize_and_send(conn)
+        else:
+            StandardResponse(accept=False, status_code=FTPSTATUS.REQUESTED_ACTION_NOT_TAKEN_FILE_UNAVAILABLE).serialize_and_send(conn)
+    except PermissionError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.PERMISSION_DENIED).serialize_and_send(conn)
+    except KeyError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
+    except FileNotFoundError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.FILE_UNAVAILABLE).serialize_and_send(conn)
+    except Exception as e:
+        StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
+            conn)
+
+
 def command_parser(data, conn, addr):
     """Parse and execute the command received from the user."""
     command, args, user_current_directory, data = user_request_process(data, conn)
@@ -81,7 +105,7 @@ def command_parser(data, conn, addr):
 
     command_handlers = {
         "login": lambda: login_handler(args, conn, addr),
-        "upload": lambda: receive_file.download_file(conn, SERVER_START_PATH),
+        "upload": lambda: upload_handler(args, data, user_current_directory, conn),
         "download": lambda: download_handler(args, user_current_directory, conn),
         "cd": lambda: change_dir_handler(args, user_current_directory, conn),
         "dir": lambda: handle_dir_command(user_current_directory, conn),

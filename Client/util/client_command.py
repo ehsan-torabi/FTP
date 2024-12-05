@@ -1,18 +1,19 @@
+import cmd
 import os
 import pathlib
 import shutil
-import socket
-import cmd
 import sys
 
-from utils import receive_file
+from utils import receive_file, send_file
 from utils import request_parser as rp
 from utils.ftp_status_code import FTPStatusCode as FTPStatus
+from utils.send_file import get_file_info, create_transmit_socket
 from utils.standard_query import StandardQuery
 
 # Set the current server and local directories
 current_server_dir = "."
 current_local_dir = os.path.dirname(os.path.abspath(__file__))
+
 
 class FTPClient(cmd.Cmd):
     intro = 'Welcome to the FTP client. Type help or ? to list commands.'
@@ -28,7 +29,8 @@ class FTPClient(cmd.Cmd):
 
     def do_upload(self, arg):
         """Upload a file to the server."""
-        self.upload_file_handler()
+        args = arg.split()
+        self.upload_file_handler(args)
 
     def do_download(self, arg):
         """Download a file from the server."""
@@ -105,8 +107,36 @@ class FTPClient(cmd.Cmd):
         args = arg.split()
         self.resume_download_handler(args)
 
-    def upload_file_handler(self):
-        pass
+    def upload_file_handler(self, arg):
+        if arg and not os.path.isabs(arg[0]):
+            dir_path = os.path.abspath(os.path.join(current_local_dir, str(arg[0])))
+        elif arg and os.path.isabs(arg[0]):
+            dir_path = arg[0]
+        else:
+            print("Syntax error.")
+            return
+        file_data = get_file_info(dir_path)
+        transmit_socket, port = create_transmit_socket()
+        file_data["transmit_port"] = port
+        file_name = os.path.basename(file_data["file_path"])
+        StandardQuery(auth_token="1234", command="upload", command_args=arg,
+                      current_dir=current_server_dir, data=file_data).serialize_and_send(self.user_socket)
+        response = rp.response_parser(self.user_socket.recv(4096))
+        if response["accept"]:
+            send_file.send_file(dir_path, transmit_socket, file_data["file_size"], file_name, True)
+            response2 = rp.response_parser(self.user_socket.recv(4096))
+            print(response2)
+            if response2["accept"]:
+                print("File uploaded successfully.")
+                transmit_socket.close()
+                return
+            else:
+                print("File upload failed.")
+                self.handle_error(response2)
+                transmit_socket.close()
+                return
+        else:
+            self.handle_error(response)
 
     def download_file_handler(self, args):
         StandardQuery(auth_token="1234", command="download", command_args=args,
@@ -118,7 +148,7 @@ class FTPClient(cmd.Cmd):
             filesize = int(response["data"]["file_size"])
             transmit_buffer_size = int(response["data"]["buffer_size"])
             checksum = response["data"]["checksum"]
-            transmit_result = receive_file.retrieve_file(self.user_socket, current_local_dir, transmit_port, filename, filesize,
+            transmit_result = receive_file.retrieve_file(current_local_dir, transmit_port, filename, filesize,
                                                          transmit_buffer_size, checksum, True)
             if transmit_result:
                 print("File downloaded successfully")
@@ -132,7 +162,7 @@ class FTPClient(cmd.Cmd):
                               data={"terminal_width": terminal_width})
         query.serialize_and_send(self.user_socket)
         print("Server dir list:\n")
-        self.handle_response('',)
+        self.handle_response('', )
 
     def local_list_handler(self, args):
         dir_path = os.path.abspath(current_local_dir)
@@ -247,6 +277,3 @@ class FTPClient(cmd.Cmd):
         self.user_socket.close()
         print("Connection closed. Exiting the program.")
         sys.exit(0)
-
-
-

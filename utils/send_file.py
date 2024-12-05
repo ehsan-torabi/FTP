@@ -1,7 +1,6 @@
 import hashlib
 import pathlib
 import socket
-import time
 from random import randint
 
 from tqdm import tqdm
@@ -33,13 +32,12 @@ def get_file_info(file_path):
     file_path = str(file_path_object.absolute())
     filesize = file_path_object.stat().st_size
     with open(file_path, "rb") as file:
-        checksum = hashlib.file_digest(file,"sha256").hexdigest()
-    file_data = {"file_path": file_path, "file_size": filesize, "buffer_size": BUFFER_SIZE,"checksum":checksum}
+        checksum = hashlib.file_digest(file, "md5").hexdigest()
+    file_data = {"file_path": file_path, "file_size": filesize, "buffer_size": BUFFER_SIZE, "checksum": checksum}
     return file_data
 
 
 def send_file(file_path, transmit_socket, filesize, filename, progress_bar: bool):
-    time.sleep(0.2)
     transmit_connection, addr = transmit_socket.accept()
     progress = ""
     if progress_bar:
@@ -49,7 +47,6 @@ def send_file(file_path, transmit_socket, filesize, filename, progress_bar: bool
             while True:
                 bytes_read = f.read(BUFFER_SIZE)
                 if not bytes_read:
-                    time.sleep(0.2)
                     transmit_connection.send(b"EOF")
                     break
                 transmit_connection.send(bytes_read)
