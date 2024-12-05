@@ -4,11 +4,12 @@ from socket import socket
 
 from Server.server import SERVER_START_PATH
 from Server.util.db_manage import ServerDB
-from Server.util.standard_response import StandardResponse
 from utils import receive_file, send_file
 from utils import request_parser as rp
 from utils.command_codes import code_command_dict
 from utils.ftp_status_code import FTPStatusCode as FTPSTATUS
+from utils.send_file import get_file_info, create_transmit_socket
+from utils.standard_response import StandardResponse
 
 # Global variables
 loggedInUsers = []
@@ -24,7 +25,7 @@ os.chdir(SERVER_START_PATH)
 
 def user_request_process(data, conn):
     """Process the user request and return command, arguments, and current directory."""
-    user_request = rp.client_response_parser(data)
+    user_request = rp.request_parser(data)
     print(user_request)
 
     command = code_command_dict.get(user_request["command"])
@@ -53,7 +54,23 @@ def send_syntax_error(conn):
     StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
 
 
-
+def download_handler(args, user_current_directory, conn):
+    try:
+        dir_path = address_process(user_current_directory, args["0"])
+        file_data = get_file_info(dir_path)
+        transmit_socket, port = create_transmit_socket()
+        file_data["transmit_port"] = port
+        file_name = os.path.basename(file_data["file_path"])
+        StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK, data=file_data).serialize_and_send(conn)
+        send_file.send_file(dir_path, transmit_socket, file_data["file_size"], file_name, False)
+        transmit_socket.close()
+    except PermissionError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.PERMISSION_DENIED).serialize_and_send(conn)
+    except KeyError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
+    except Exception as e:
+        StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
+            conn)
 
 
 def command_parser(data, conn, addr):
@@ -65,7 +82,7 @@ def command_parser(data, conn, addr):
     command_handlers = {
         "login": lambda: login_handler(args, conn, addr),
         "upload": lambda: receive_file.download_file(conn, SERVER_START_PATH),
-        "download": lambda: send_file.upload_file(conn, args[0]),
+        "download": lambda: download_handler(args, user_current_directory, conn),
         "cd": lambda: change_dir_handler(args, user_current_directory, conn),
         "dir": lambda: handle_dir_command(user_current_directory, conn),
         "rename": lambda: rename_handler(args, user_current_directory, conn),
@@ -133,6 +150,7 @@ def list_handler(args: dict[str: str], user_current_dir: str, request_data, conn
         return
 
     ls = os.listdir(dir_path)
+    ls.sort()
     terminal_width = user_terminal_width
     max_length = max(len(name) for name in ls) if ls else 0
     num_columns = max(1, terminal_width // (max_length + 2))
@@ -164,7 +182,6 @@ def mkdir_handler(args, user_current_directory, conn):
     except Exception as e:
         StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
             conn)
-
 
 
 def change_dir_handler(args: dict[str: str], user_current_dir: str, conn: socket):

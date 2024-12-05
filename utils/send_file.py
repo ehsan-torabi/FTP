@@ -5,9 +5,6 @@ from random import randint
 
 from tqdm import tqdm
 
-from .ftp_status_code import FTPStatusCode as FTPStatus
-
-SEPARATOR = "<SEPARATOR>"
 BUFFER_SIZE = 4096
 
 
@@ -26,37 +23,26 @@ def create_transmit_socket() -> (socket.socket, int):
     return transmit_socket, port
 
 
-def send_file(file_path, command_conn):
-    transmit_socket, transmit_port = create_transmit_socket()
-    filename = ""
-    filesize = 0
-    try:
-        file_path_object = pathlib.Path(file_path)
-        if not file_path_object.absolute().is_file():
-            raise Exception(f"File {file_path} is not a file")
-        elif not file_path_object.exists():
-            raise FileNotFoundError
+def get_file_info(file_path):
+    file_path_object = pathlib.Path(file_path)
+    if not file_path_object.absolute().is_file():
+        raise Exception(f"File {file_path} is not a file")
+    elif not file_path_object.exists():
+        raise FileNotFoundError
+    file_path = str(file_path_object.absolute())
+    filesize = file_path_object.stat().st_size
+    file_data = {"file_path": file_path, "file_size": filesize, "buffer_size": BUFFER_SIZE}
+    return file_data
 
-        filename = file_path_object.name
-        filesize = file_path_object.stat().st_size
-        command_conn.send(f"{transmit_port}{SEPARATOR}{filename}{SEPARATOR}{filesize}".encode())
-    except FileNotFoundError:
-        print(f"File {file_path} not found.")
-        command_conn.send(f"{FTPStatus.FILE_UNAVAILABLE}".encode())
-        transmit_socket.close()
-        return
-    except Exception as exception:
-        print(exception)
-        command_conn.send(f"{FTPStatus.FILE_UNAVAILABLE}".encode())
-        transmit_socket.close()
-        return
 
+def send_file(file_path, transmit_socket, filesize, filename, progress_bar: bool):
     time.sleep(0.2)
     transmit_connection, addr = transmit_socket.accept()
-    # start sending the file
-    progress = tqdm(range(filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+    progress = ""
+    if progress_bar:
+        progress = tqdm(range(filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     with transmit_connection:
-        with open(file_path_object, "rb") as f:
+        with open(file_path, "rb") as f:
             while True:
                 bytes_read = f.read(BUFFER_SIZE)
                 if not bytes_read:
@@ -64,8 +50,5 @@ def send_file(file_path, command_conn):
                     transmit_connection.send(b"EOF")
                     break
                 transmit_connection.send(bytes_read)
-                progress.update(len(bytes_read))
-
-
-def upload_file(conn, file_path):
-    send_file(file_path, conn)
+                if progress_bar:
+                    progress.update(len(bytes_read))
