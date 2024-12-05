@@ -1,3 +1,4 @@
+import hashlib
 import pathlib
 import socket
 import time
@@ -31,7 +32,9 @@ def get_file_info(file_path):
         raise FileNotFoundError
     file_path = str(file_path_object.absolute())
     filesize = file_path_object.stat().st_size
-    file_data = {"file_path": file_path, "file_size": filesize, "buffer_size": BUFFER_SIZE}
+    with open(file_path, "rb") as file:
+        checksum = hashlib.file_digest(file,"sha256").hexdigest()
+    file_data = {"file_path": file_path, "file_size": filesize, "buffer_size": BUFFER_SIZE,"checksum":checksum}
     return file_data
 
 
@@ -52,3 +55,5 @@ def send_file(file_path, transmit_socket, filesize, filename, progress_bar: bool
                 transmit_connection.send(bytes_read)
                 if progress_bar:
                     progress.update(len(bytes_read))
+            if progress_bar:
+                progress.close()

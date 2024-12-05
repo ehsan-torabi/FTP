@@ -1,3 +1,4 @@
+import hashlib
 import os
 import socket
 
@@ -9,7 +10,7 @@ os.makedirs(GENERAL_DOWNLOAD_DIR, exist_ok=True)
 
 
 def retrieve_file(command_conn: socket.socket, file_path, transmit_port, file_name, file_size, buffer_size,
-                  progress_bar):
+                  checksum,progress_bar):
     try:
         progress = ""
         if progress_bar:
@@ -20,10 +21,19 @@ def retrieve_file(command_conn: socket.socket, file_path, transmit_port, file_na
                 while True:
                     bytes_read = transmit_socket.recv(buffer_size)
                     if bytes_read == b"EOF":
-                        return True
+                        if progress_bar:
+                            progress.close()
+                        break
                     f.write(bytes_read)
                     if progress_bar:
                         progress.update(len(bytes_read))
+            with open(os.path.join(file_path, file_name), "rb") as file:
+                new_checksum = hashlib.file_digest(file,"sha256").hexdigest()
+                if checksum == new_checksum:
+                    return True
+        return False
+
+
     except Exception as e:
         print(f"Error in receive file: {e}")
         return False

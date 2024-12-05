@@ -59,8 +59,9 @@ def download_file_handler(user_socket, args):
         filename = os.path.basename(response["data"]["file_path"])
         filesize = int(response["data"]["file_size"])
         transmit_buffer_size = int(response["data"]["buffer_size"])
+        checksum = response["data"]["checksum"]
         transmit_result = receive_file.retrieve_file(user_socket, current_local_dir, transmit_port, filename, filesize,
-                                                     transmit_buffer_size, True)
+                                                     transmit_buffer_size,checksum, True)
         if transmit_result:
             print("File downloaded successfully")
     else:
