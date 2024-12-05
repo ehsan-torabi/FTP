@@ -15,6 +15,7 @@ class Server:
     def start(self):
         self.bind_socket()
         self.sock.listen(5)  # Allow up to 5 connections
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         print(f"Server running on port {self.port}")
 
     def bind_socket(self):
