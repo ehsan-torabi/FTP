@@ -75,10 +75,6 @@ class FTPClient(cmd.Cmd):
         args = arg.split()
         self.local_list_handler(args)
 
-    def do_help(self, arg):
-        """Display help information."""
-        self.help_handler()
-
     def do_quit(self, arg):
         """Exit the program."""
         self.exit_program()
@@ -167,7 +163,7 @@ class FTPClient(cmd.Cmd):
     def local_list_handler(self, args):
         dir_path = os.path.abspath(current_local_dir)
         if args:
-            dir_path = os.path.abspath(os.path.join(current_local_dir, args[0]))
+            dir_path = os.path.abspath(os.path.join(current_local_dir, str(args[0])))
         if args and args[0] == "..":
             dir_path = str(pathlib.Path(current_local_dir).parent)
 
@@ -262,7 +258,7 @@ class FTPClient(cmd.Cmd):
         if "data" in response:
             print(response["data"])
 
-    def help_handler(self):
+    def help_full(self):
         """Display help information."""
         file_path = os.path.abspath("/home/ehsan/Workspace/FTP/help.txt")
         try:
