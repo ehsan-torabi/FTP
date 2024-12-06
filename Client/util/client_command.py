@@ -105,11 +105,11 @@ class FTPClient(cmd.Cmd):
         self.resume_download_handler(args)
 
     def upload_file_handler(self, arg):
-        dir_path = current_local_dir
+        dir_path = process_path(arg[0], current_local_dir)
         if len(arg) > 1:
-            dir_path = process_path(arg[0], current_local_dir)
             if not validate_path(dir_path, file_check=True):
                 print("Invalid path")
+
         file_data = get_file_info(dir_path)
         transmit_socket, port = create_transmit_socket()
         file_data["transmit_port"] = port
@@ -147,11 +147,12 @@ class FTPClient(cmd.Cmd):
             filename = os.path.basename(response["data"]["file_path"])
             filesize = int(response["data"]["file_size"])
             transmit_buffer_size = int(response["data"]["buffer_size"])
-            checksum = response["data"]["checksum"]
             transmit_result = receive_file.retrieve_file(dir_path, transmit_port, filename, filesize,
-                                                         transmit_buffer_size, checksum, True)
+                                                         transmit_buffer_size, True)
             if transmit_result:
                 print("File downloaded successfully")
+            else:
+                print("File download failed.")
         else:
             self.handle_error(response)
 
