@@ -7,6 +7,7 @@ import sys
 from utils import receive_file, send_file
 from utils import request_parser as rp
 from utils.ftp_status_code import FTPStatusCode as FTPStatus
+from utils.path_tools import process_path, validate_path
 from utils.send_file import get_file_info, create_transmit_socket
 from utils.standard_query import StandardQuery
 
@@ -104,13 +105,11 @@ class FTPClient(cmd.Cmd):
         self.resume_download_handler(args)
 
     def upload_file_handler(self, arg):
-        if arg and not os.path.isabs(arg[0]):
-            dir_path = os.path.abspath(os.path.join(current_local_dir, str(arg[0])))
-        elif arg and os.path.isabs(arg[0]):
-            dir_path = arg[0]
-        else:
-            print("Syntax error.")
-            return
+        dir_path = current_local_dir
+        if len(arg) > 1:
+            dir_path = process_path(arg[0], current_local_dir)
+            if not validate_path(dir_path, file_check=True):
+                print("Invalid path")
         file_data = get_file_info(dir_path)
         transmit_socket, port = create_transmit_socket()
         file_data["transmit_port"] = port
@@ -138,13 +137,18 @@ class FTPClient(cmd.Cmd):
         StandardQuery(auth_token="1234", command="download", command_args=args,
                       current_dir=current_server_dir).serialize_and_send(self.user_socket)
         response = rp.response_parser(self.user_socket.recv(4096))
+        dir_path = current_local_dir
+        if len(args) > 1:
+            dir_path = process_path(args[1], current_local_dir)
+            if not validate_path(dir_path, dir_check=True):
+                print("Invalid path")
         if response["accept"]:
             transmit_port = int(response["data"]["transmit_port"])
             filename = os.path.basename(response["data"]["file_path"])
             filesize = int(response["data"]["file_size"])
             transmit_buffer_size = int(response["data"]["buffer_size"])
             checksum = response["data"]["checksum"]
-            transmit_result = receive_file.retrieve_file(current_local_dir, transmit_port, filename, filesize,
+            transmit_result = receive_file.retrieve_file(dir_path, transmit_port, filename, filesize,
                                                          transmit_buffer_size, checksum, True)
             if transmit_result:
                 print("File downloaded successfully")
@@ -161,11 +165,10 @@ class FTPClient(cmd.Cmd):
         self.handle_response('', )
 
     def local_list_handler(self, args):
-        dir_path = os.path.abspath(current_local_dir)
+        dir_path = process_path(current_local_dir,current_local_dir)
         if args:
-            dir_path = os.path.abspath(os.path.join(current_local_dir, str(args[0])))
-        if args and args[0] == "..":
-            dir_path = str(pathlib.Path(current_local_dir).parent)
+            dir_path = process_path(args[0],current_local_dir)
+
 
         ls = os.listdir(dir_path)
         ls.sort()

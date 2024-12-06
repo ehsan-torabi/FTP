@@ -14,7 +14,5 @@ class StandardResponse:
 
     def serialize_and_send(self, connection):
         serialized = self.serialize()
-        print(len(serialized.encode("utf8")))
-        compressed = bz2.compress(serialized.encode("utf-8"), compresslevel=1)
-        print(len(compressed))
+        compressed = bz2.compress(serialized.encode("utf-8"), compresslevel=6)
         connection.sendall(compressed)

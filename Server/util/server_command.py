@@ -1,5 +1,4 @@
 import os
-import pathlib
 from socket import socket
 
 from Server.server import SERVER_START_PATH
@@ -8,8 +7,10 @@ from utils import receive_file, send_file
 from utils import request_parser as rp
 from utils.command_codes import code_command_dict
 from utils.ftp_status_code import FTPStatusCode as FTPSTATUS
+from utils.path_tools import process_path, validate_path
 from utils.send_file import get_file_info, create_transmit_socket
 from utils.standard_response import StandardResponse
+from Server.util.logging_config import server_logger
 
 # Global variables
 loggedInUsers = []
@@ -26,7 +27,6 @@ os.chdir(SERVER_START_PATH)
 def user_request_process(data, conn):
     """Process the user request and return command, arguments, and current directory."""
     user_request = rp.request_parser(data)
-    print(user_request)
 
     command = code_command_dict.get(user_request["command"])
     if command is None:
@@ -56,7 +56,7 @@ def send_syntax_error(conn):
 
 def download_handler(args, user_current_directory, conn):
     try:
-        dir_path = address_process(user_current_directory, args["0"])
+        dir_path = process_path(args["0"],user_current_directory)
         file_data = get_file_info(dir_path)
         transmit_socket, port = create_transmit_socket()
         file_data["transmit_port"] = port
@@ -73,56 +73,89 @@ def download_handler(args, user_current_directory, conn):
             conn)
 
 
-def upload_handler(args,data, user_current_directory, conn):
+def upload_handler(args, data, user_current_directory, conn):
+    file_name=""
     try:
         dir_path = user_current_directory
         if len(args) > 1:
-            dir_path = address_process(user_current_directory, args["1"])
+            dir_path = process_path(args["1"],user_current_directory)
+            if not validate_path(dir_path,dir_check=True):
+                raise NotADirectoryError
+
+
         file_name = os.path.basename(data["file_path"])
+        server_logger.info(f"Upload request for file: {file_name} to directory: {dir_path}")
+
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
-        rec_result = receive_file.retrieve_file(dir_path, data["transmit_port"], file_name, data["file_size"], data["buffer_size"],
-                                   data["checksum"], False)
+
+        rec_result = receive_file.retrieve_file(
+            dir_path,
+            data["transmit_port"],
+            file_name,
+            data["file_size"],
+            data["buffer_size"],
+            data["checksum"],
+            False
+        )
+
         if rec_result:
+            server_logger.info(f"Successful upload of file: {file_name}")
             StandardResponse(accept=True, status_code=FTPSTATUS.REQUESTED_FILE_ACTION_OK).serialize_and_send(conn)
         else:
-            StandardResponse(accept=False, status_code=FTPSTATUS.REQUESTED_ACTION_NOT_TAKEN_FILE_UNAVAILABLE).serialize_and_send(conn)
+            server_logger.warning(f"Failed upload of file: {file_name}")
+            StandardResponse(accept=False,
+                             status_code=FTPSTATUS.REQUESTED_ACTION_NOT_TAKEN_FILE_UNAVAILABLE).serialize_and_send(conn)
+
     except PermissionError:
+        server_logger.error(f"Permission denied for file upload: {file_name}")
         StandardResponse(accept=False, status_code=FTPSTATUS.PERMISSION_DENIED).serialize_and_send(conn)
     except KeyError:
+        server_logger.error("Invalid upload parameters")
         StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
-    except FileNotFoundError:
+    except FileNotFoundError :
+        server_logger.error(f"File not found during upload: {file_name}")
         StandardResponse(accept=False, status_code=FTPSTATUS.FILE_UNAVAILABLE).serialize_and_send(conn)
+    except NotADirectoryError:
+        server_logger.error(f"Directory not found during upload: {file_name}")
+        StandardResponse(accept=False,status_code=FTPSTATUS.PATH_NOT_DIRECTORY).serialize_and_send(conn)
     except Exception as e:
+        server_logger.exception(f"Unexpected error during file upload: {e}")
         StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
             conn)
 
 
 def command_parser(data, conn, addr):
     """Parse and execute the command received from the user."""
+    server_logger.info(f"Received command from {addr}")
     command, args, user_current_directory, data = user_request_process(data, conn)
     if not command:
+        server_logger.warning(f"Invalid command received from {addr}")
         return
+    try:
+        command_handlers = {
+            "login": lambda: login_handler(args, conn, addr),
+            "upload": lambda: upload_handler(args, data, user_current_directory, conn),
+            "download": lambda: download_handler(args, user_current_directory, conn),
+            "cd": lambda: change_dir_handler(args, user_current_directory, conn),
+            "dir": lambda: handle_dir_command(user_current_directory, conn),
+            "rename": lambda: rename_handler(args, user_current_directory, conn),
+            "list": lambda: list_handler(args, user_current_directory, data, conn),
+            "ls": lambda: list_handler(args, user_current_directory, data, conn),
+            "mkdir": lambda: mkdir_handler(args, user_current_directory, conn),
+            "rmdir": lambda:
+            "pass",
+            "rm": lambda:
+            "pass",
+            "resume": lambda:
+            "pass",
+        }
 
-    command_handlers = {
-        "login": lambda: login_handler(args, conn, addr),
-        "upload": lambda: upload_handler(args, data, user_current_directory, conn),
-        "download": lambda: download_handler(args, user_current_directory, conn),
-        "cd": lambda: change_dir_handler(args, user_current_directory, conn),
-        "dir": lambda: handle_dir_command(user_current_directory, conn),
-        "rename": lambda: rename_handler(args, user_current_directory, conn),
-        "list": lambda: list_handler(args, user_current_directory, data, conn),
-        "ls": lambda: list_handler(args, user_current_directory, data, conn),
-        "mkdir": lambda: mkdir_handler(args, user_current_directory, conn),
-        "rmdir": lambda:
-        "pass",
-        "rm": lambda:
-        "pass",
-        "resume": lambda:
-        "pass",
-    }
-
-    handler = command_handlers.get(command, lambda: send_command_not_implemented(conn))
-    handler()
+        handler = command_handlers.get(command, lambda: send_command_not_implemented(conn))
+        server_logger.info(f"Executing command: {command} for {addr}")
+        handler()
+    except Exception as e:
+        server_logger.exception(f"Error processing command {command} from {addr}: {e}")
+        send_command_not_implemented(conn)
 
 
 def handle_dir_command(user_current_directory, conn):
@@ -130,15 +163,6 @@ def handle_dir_command(user_current_directory, conn):
     data = {"directory_path": os.path.abspath(user_current_directory)}
     StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK, data=data).serialize_and_send(conn)
 
-
-def address_process(user_current_dir: str, arg: str):
-    """Process the address based on the current directory and argument."""
-    dir_path = os.path.abspath(user_current_dir)
-    if arg:
-        return os.path.abspath(os.path.join(user_current_dir, arg))
-    if arg == "..":
-        return str(pathlib.Path(user_current_dir).parent)
-    return dir_path
 
 
 def login_handler(args: list, conn: socket, addr):
@@ -166,7 +190,7 @@ def list_handler(args: dict[str: str], user_current_dir: str, request_data, conn
     if not args:
         args = {"0": user_current_dir}
 
-    dir_path = address_process(user_current_dir, args["0"])
+    dir_path = process_path(args["0"],user_current_dir )
     user_terminal_width = request_data["terminal_width"]
 
     if not os.path.isdir(dir_path):
@@ -194,7 +218,7 @@ def list_handler(args: dict[str: str], user_current_dir: str, request_data, conn
 def mkdir_handler(args, user_current_directory, conn):
     """Make a directory."""
     try:
-        dir_path = address_process(user_current_directory, args["0"])
+        dir_path = process_path(args["0"],user_current_directory)
         os.mkdir(dir_path)
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
     except PermissionError:
@@ -213,7 +237,7 @@ def change_dir_handler(args: dict[str: str], user_current_dir: str, conn: socket
     if not args:
         args = {"0": user_current_dir}
 
-    dir_path = address_process(user_current_dir, args["0"])
+    dir_path = process_path(args["0"], user_current_dir)
 
     if os.path.isdir(dir_path):
         StandardResponse(accept=True, status_code=FTPSTATUS.CHANGE_DIRECTORY_ACCEPTED,
@@ -225,8 +249,8 @@ def change_dir_handler(args: dict[str: str], user_current_dir: str, conn: socket
 def rename_handler(args: dict[str: str], user_current_dir: str, conn: socket):
     """Rename a file or directory."""
     try:
-        old_dir_path = address_process(user_current_dir, args["0"])
-        new_dir_path = address_process(user_current_dir, args["1"])
+        old_dir_path = process_path(args["0"],user_current_dir)
+        new_dir_path = process_path(args["1"],user_current_dir)
         os.rename(old_dir_path, new_dir_path)
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
     except FileNotFoundError:

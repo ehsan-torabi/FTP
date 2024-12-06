@@ -3,8 +3,9 @@ import socket
 import threading
 
 from Server.util import server_command
+from Server.util.logging_config import server_logger
 
-SERVER_START_PATH = os.path.abspath("../Public")
+SERVER_START_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 class Server:
@@ -16,7 +17,7 @@ class Server:
         self.bind_socket()
         self.sock.listen(5)  # Allow up to 5 connections
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print(f"Server running on port {self.port}")
+        server_logger.info(f"Server running on port {self.port}")
 
     def bind_socket(self):
         while True:
@@ -32,14 +33,14 @@ class Server:
                 conn, addr = self.sock.accept()
                 threading.Thread(target=self.handle_connection, args=(conn, addr)).start()
             except KeyboardInterrupt:
-                print("Server stopped.")
+                server_logger.info("Server stopped.")
                 self.shutdown()
                 break
             except Exception as e:
-                print(f"Error accepting connection: {e}")
+                server_logger.info(f"Error accepting connection: {e}")
 
     def handle_connection(self, conn: socket.socket, addr):
-        print(f"[+] User connected: {addr}")
+        server_logger.info(f"[+] User connected: {addr}")
         with conn:
             while True:
                 try:
@@ -48,10 +49,10 @@ class Server:
                         break
                     server_command.command_parser(data, conn, addr)
                 except ConnectionResetError:
-                    print(f"[-] Connection reset by {addr}")
+                    server_logger.info(f"[-] Connection reset by {addr}")
                     break
                 except Exception as e:
-                    print(f"Error handling connection from {addr}: {e}")
+                    server_logger.info(f"Error handling connection from {addr}: {e}")
                     break
 
     def shutdown(self):
