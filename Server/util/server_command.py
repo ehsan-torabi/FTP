@@ -24,7 +24,6 @@ command_list = [
 # Change the current working directory to the server start path
 os.chdir(SERVER_START_PATH)
 
-
 def user_request_process(data, conn):
     """Process the user request and return command, arguments, and current directory."""
     user_request = rp.request_parser(data)
@@ -45,6 +44,38 @@ def user_request_process(data, conn):
     return command, args, user_current_directory, data
 
 
+def command_parser(data, conn, addr):
+    """Parse and execute the command received from the user."""
+    server_logger.info(f"Received command from {addr}")
+    command, args, user_current_directory, data = user_request_process(data, conn)
+    if not command:
+        server_logger.warning(f"Invalid command received from {addr}")
+        return
+    try:
+        command_handlers = {
+            "login": lambda: login_handler(args, conn, addr),
+            "upload": lambda: upload_handler(args, data, user_current_directory, conn),
+            "download": lambda: download_handler(args, user_current_directory, conn),
+            "cd": lambda: change_dir_handler(args, user_current_directory, conn),
+            "pwd": lambda: handle_dir_command(user_current_directory, conn),
+            "rename": lambda: rename_handler(args, user_current_directory, conn),
+            "list": lambda: list_handler(args, user_current_directory, data, conn),
+            "ls": lambda: list_handler(args, user_current_directory, data, conn),
+            "mkdir": lambda: mkdir_handler(args, user_current_directory, conn),
+            "rmdir": lambda: rmdir_handler(args, user_current_directory,data, conn),
+            "rm": lambda:remove_file_handler(args, user_current_directory, conn),
+            "resume": lambda:
+            "pass",
+        }
+
+        handler = command_handlers.get(command, lambda: send_command_not_implemented(conn))
+        server_logger.info(f"Executing command: {command} for {addr}")
+        handler()
+    except Exception as e:
+        server_logger.exception(f"Error processing command {command} from {addr}: {e}")
+        send_command_not_implemented(conn)
+
+
 def send_command_not_implemented(conn):
     """Send a command not implemented response to the client."""
     StandardResponse(accept=False, status_code=FTPSTATUS.COMMAND_NOT_IMPLEMENTED).serialize_and_send(conn)
@@ -56,6 +87,7 @@ def send_syntax_error(conn):
 
 
 def download_handler(args, user_current_directory, conn):
+    """Handle the download request."""
     try:
         dir_path = process_path(args["0"],user_current_directory)
         file_data = get_file_info(dir_path)
@@ -75,6 +107,7 @@ def download_handler(args, user_current_directory, conn):
 
 
 def upload_handler(args, data, user_current_directory, conn):
+    """Handle the upload request"""
     file_name=""
     try:
         dir_path = user_current_directory
@@ -146,44 +179,30 @@ def rmdir_handler(args, user_current_directory,data, conn):
         StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
             conn)
 
-def command_parser(data, conn, addr):
-    """Parse and execute the command received from the user."""
-    server_logger.info(f"Received command from {addr}")
-    command, args, user_current_directory, data = user_request_process(data, conn)
-    if not command:
-        server_logger.warning(f"Invalid command received from {addr}")
-        return
-    try:
-        command_handlers = {
-            "login": lambda: login_handler(args, conn, addr),
-            "upload": lambda: upload_handler(args, data, user_current_directory, conn),
-            "download": lambda: download_handler(args, user_current_directory, conn),
-            "cd": lambda: change_dir_handler(args, user_current_directory, conn),
-            "pwd": lambda: handle_dir_command(user_current_directory, conn),
-            "rename": lambda: rename_handler(args, user_current_directory, conn),
-            "list": lambda: list_handler(args, user_current_directory, data, conn),
-            "ls": lambda: list_handler(args, user_current_directory, data, conn),
-            "mkdir": lambda: mkdir_handler(args, user_current_directory, conn),
-            "rmdir": lambda: rmdir_handler(args, user_current_directory,data, conn),
-            "rm": lambda:
-            "pass",
-            "resume": lambda:
-            "pass",
-        }
 
-        handler = command_handlers.get(command, lambda: send_command_not_implemented(conn))
-        server_logger.info(f"Executing command: {command} for {addr}")
-        handler()
+def remove_file_handler(args, user_current_directory, conn):
+    """Remove a directory."""
+    try:
+        file_path = process_path(args["0"], user_current_directory)
+        if not validate_path(file_path, file_check=True):
+            raise FileNotFoundError
+        os.remove(file_path)
+        StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
+    except PermissionError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.PERMISSION_DENIED).serialize_and_send(conn)
+    except KeyError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
+    except FileNotFoundError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.FILE_UNAVAILABLE).serialize_and_send(conn)
     except Exception as e:
-        server_logger.exception(f"Error processing command {command} from {addr}: {e}")
-        send_command_not_implemented(conn)
+        StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
+            conn)
 
 
 def handle_dir_command(user_current_directory, conn):
     """Handle the 'dir' command and send the current directory path."""
     data = {"directory_path": os.path.abspath(user_current_directory)}
     StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK, data=data).serialize_and_send(conn)
-
 
 
 def login_handler(args: list, conn: socket, addr):
