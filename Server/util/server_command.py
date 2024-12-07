@@ -258,8 +258,19 @@ def list_handler(args: dict[str: str], user_current_dir: str, request_data, conn
 def mkdir_handler(args, user_current_directory, conn):
     """Make a directory."""
     try:
-        dir_path = process_path(args["0"],user_current_directory)
-        os.mkdir(dir_path)
+
+        if len(args["0"]) > 1:
+            dirs = str(args["0"]).strip().split("/")
+            new_dir = user_current_directory
+            for dir in dirs:
+                if dir not in [os.path.dirname(user_current_directory),os.path.basename(user_current_directory)]:
+                    new_dir = os.path.join(new_dir, dir)
+                    dir_path = process_path(new_dir,user_current_directory)
+                    os.mkdir(dir_path)
+
+        else:
+            dir_path = process_path(args["0"], user_current_directory)
+            os.mkdir(dir_path)
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
     except PermissionError:
         StandardResponse(accept=False, status_code=FTPSTATUS.PERMISSION_DENIED).serialize_and_send(conn)
