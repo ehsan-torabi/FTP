@@ -1,6 +1,5 @@
 import cmd
 import os
-import pathlib
 import shutil
 import sys
 
@@ -55,9 +54,11 @@ class FTPClient(cmd.Cmd):
         """Rename a file on the server."""
         args = arg.split()
         self.rename_handler(args)
+
     def do_rmdir(self, arg):
         args = arg.split()
         self.remove_dir_handler(args)
+
     def do_list(self, arg):
         """List files in the current server directory."""
         args = arg.split()
@@ -90,11 +91,6 @@ class FTPClient(cmd.Cmd):
         """Make a directory on the server."""
         args = arg.split()
         self.make_dir_handler(args)
-
-    def do_rmdir(self, arg):
-        """Remove a directory on the server."""
-        args = arg.split()
-        self.remove_dir_handler(args)
 
     def do_rm(self, arg):
         """Remove a file on the server."""
@@ -149,8 +145,9 @@ class FTPClient(cmd.Cmd):
             filename = os.path.basename(response["data"]["file_path"])
             filesize = int(response["data"]["file_size"])
             transmit_buffer_size = int(response["data"]["buffer_size"])
+            checksum = response["data"]["checksum"]
             transmit_result = receive_file.retrieve_file(dir_path, transmit_port, filename, filesize,
-                                                         transmit_buffer_size, True)
+                                                         transmit_buffer_size, checksum)
             if transmit_result:
                 print("File downloaded successfully")
             else:
@@ -212,6 +209,7 @@ class FTPClient(cmd.Cmd):
         else:
             self.handle_error(response)
 
+
     def handle_response(self, field: str):
         """Handle the server's response to a command."""
         raw_response = self.user_socket.recv(4096)
@@ -255,7 +253,14 @@ class FTPClient(cmd.Cmd):
 
     def remove_file_handler(self, args):
         """Remove a file on the server."""
-        pass  # Implement as needed
+        if input("Are you sure you want to remove this file? [y/N]: ") == "y":
+            query = StandardQuery("1234", "rm", current_server_dir, command_args=args)
+            query.serialize_and_send(self.user_socket)
+            response = rp.response_parser(self.user_socket.recv(4096))
+            if response["accept"]:
+                print("File removed successfully.")
+            else:
+                self.handle_error(response)
 
     def resume_download_handler(self, args):
         """Resume a download."""
