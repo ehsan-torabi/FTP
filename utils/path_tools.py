@@ -24,7 +24,8 @@ def process_path(input_path,current_user_dir):
         # Check if input_path is a file name
         if input_path == os.path.basename(input_path) and input_path not in ["~","..",".",current_user_dir,"-","/"]:
             input_path = os.path.join(os.path.abspath(current_user_dir), input_path)
-
+        if input_path == "..":
+            input_path = os.path.dirname(current_user_dir)
         # Expand user home directory (~)
         expanded_path = os.path.expanduser(input_path)
 
