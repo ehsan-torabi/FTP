@@ -43,11 +43,11 @@ class FTPClient(cmd.Cmd):
         args = arg.split()
         self.change_dir_handler(args)
 
-    def do_ldir(self, arg):
+    def do_lpwd(self, arg):
         """Print current local directory."""
         print(current_local_dir)
 
-    def do_dir(self, arg):
+    def do_pwd(self, arg):
         """Print current server directory."""
         print(current_server_dir)
 

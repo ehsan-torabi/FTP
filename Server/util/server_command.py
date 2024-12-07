@@ -137,13 +137,12 @@ def command_parser(data, conn, addr):
             "upload": lambda: upload_handler(args, data, user_current_directory, conn),
             "download": lambda: download_handler(args, user_current_directory, conn),
             "cd": lambda: change_dir_handler(args, user_current_directory, conn),
-            "dir": lambda: handle_dir_command(user_current_directory, conn),
+            "pwd": lambda: handle_dir_command(user_current_directory, conn),
             "rename": lambda: rename_handler(args, user_current_directory, conn),
             "list": lambda: list_handler(args, user_current_directory, data, conn),
             "ls": lambda: list_handler(args, user_current_directory, data, conn),
             "mkdir": lambda: mkdir_handler(args, user_current_directory, conn),
-            "rmdir": lambda:
-            "pass",
+            "rmdir": lambda:"pass",
             "rm": lambda:
             "pass",
             "resume": lambda:
