@@ -53,9 +53,9 @@ management.
 1. Navigate to the client directory.
 2. Run the client script:
    ```bash
-   python Client/client.py
+   python Client/client.py <server_ip> <port>
    ```
-3. Enter the server port when prompted to connect to the server.
+
 
 ### Available Commands
 
@@ -63,7 +63,8 @@ management.
     2. upload <filename>                - Upload a file to the server.
     3. download <filename>              - Download a file from the server.
     4. mkdir <dir_name>                 - Create a new directory on the server.
-    5. rmdir <dir_name>                 - Remove a directory from the server.
+    5. rmdir <option=-r> <dir_name>     - Remove a directory from the server.You can use the "-r"
+                                          for remove none empty directory.
     6. rm <filename>                    - Delete a file from the server.
     7. cd <dir_name>                    - Change the current working directory.
     8. pwd                              - Path of the current directory(On server).

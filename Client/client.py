@@ -32,10 +32,11 @@ def connect_to_server(port):
         print(f"An error occurred while connecting: {e}")
 
 
-def main():
-    port = input("Enter Port: ")
+def main(addr,port):
     connect_to_server(port)
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) != 3:
+        print("Usage: python client.py <ip> <port>")
+    main(sys.argv[1],sys.argv[2])
