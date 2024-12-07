@@ -66,8 +66,8 @@ management.
     5. rmdir <dir_name>                 - Remove a directory from the server.
     6. rm <filename>                    - Delete a file from the server.
     7. cd <dir_name>                    - Change the current working directory.
-    8. dir                              - Path of the current directory(On server).
-    9. ldir                             - Path of the current directory(On local).
+    8. pwd                              - Path of the current directory(On server).
+    9. lpwd                             - Path of the current directory(On local).
     9. resume                           - Resume a previously interrupted file transfer (not implemented).
     10. rename <old_name> <new_name>    - Rename a file on the server.
     11. list or ls <path>               - List files in the path on the server.(default: current directory on server).
