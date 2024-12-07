@@ -1,4 +1,5 @@
 import os
+from shutil import rmtree
 from socket import socket
 
 from Server.server import SERVER_START_PATH
@@ -124,6 +125,27 @@ def upload_handler(args, data, user_current_directory, conn):
             conn)
 
 
+def rmdir_handler(args, user_current_directory,data, conn):
+    """Remove a directory."""
+    try:
+        dir_path = process_path(args["0"], user_current_directory)
+        if not validate_path(dir_path, dir_check=True):
+            raise NotADirectoryError
+        if data["method"] == "n":
+            os.rmdir(dir_path)
+        elif data["method"] == "r":
+            rmtree(dir_path)
+        StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
+    except PermissionError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.PERMISSION_DENIED).serialize_and_send(conn)
+    except KeyError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_IN_PARAMETERS).serialize_and_send(conn)
+    except NotADirectoryError:
+        StandardResponse(accept=False, status_code=FTPSTATUS.PATH_NOT_DIRECTORY).serialize_and_send(conn)
+    except Exception as e:
+        StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
+            conn)
+
 def command_parser(data, conn, addr):
     """Parse and execute the command received from the user."""
     server_logger.info(f"Received command from {addr}")
@@ -142,7 +164,7 @@ def command_parser(data, conn, addr):
             "list": lambda: list_handler(args, user_current_directory, data, conn),
             "ls": lambda: list_handler(args, user_current_directory, data, conn),
             "mkdir": lambda: mkdir_handler(args, user_current_directory, conn),
-            "rmdir": lambda:"pass",
+            "rmdir": lambda: rmdir_handler(args, user_current_directory,data, conn),
             "rm": lambda:
             "pass",
             "resume": lambda:

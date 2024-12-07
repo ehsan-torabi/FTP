@@ -55,7 +55,9 @@ class FTPClient(cmd.Cmd):
         """Rename a file on the server."""
         args = arg.split()
         self.rename_handler(args)
-
+    def do_rmdir(self, arg):
+        args = arg.split()
+        self.remove_dir_handler(args)
     def do_list(self, arg):
         """List files in the current server directory."""
         args = arg.split()
@@ -237,7 +239,19 @@ class FTPClient(cmd.Cmd):
 
     def remove_dir_handler(self, args):
         """Remove a directory on the server."""
-        pass  # Implement as needed
+        if input("Are you sure you want to remove this directory? [y/N]: ") == "y":
+            if len(args) > 0 and "-r" in args:
+                data = {"method":"r"} # r Represents normal remove directory
+                args = [i for i in args if i != "-r"]
+            else:
+                data = {"method":"n"} # n Represents normal remove directory
+            query = StandardQuery("1234", "rmdir", current_server_dir, command_args=args,data=data)
+            query.serialize_and_send(self.user_socket)
+            response = rp.response_parser(self.user_socket.recv(4096))
+            if response["accept"]:
+                print("Directory removed successfully.")
+            else:
+                self.handle_error(response)
 
     def remove_file_handler(self, args):
         """Remove a file on the server."""
