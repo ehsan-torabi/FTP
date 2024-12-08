@@ -28,7 +28,7 @@ def connect_to_server(port):
         print(f"An error occurred while connecting: {e}")
 
 
-def main(port):
+def main(port=8021):
     connect_to_server(port)
 
 
