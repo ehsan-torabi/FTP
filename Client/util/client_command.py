@@ -79,6 +79,11 @@ class FTPClient(cmd.Cmd):
         args = arg.split()
         self.local_list_handler(args)
 
+    def do_lcd(self, arg):
+        """Change the current local directory."""
+        arg = arg.split()
+        self.lcd_handler(arg)
+
     def do_quit(self, arg):
         """Exit the program."""
         self.exit_program()
@@ -188,6 +193,23 @@ class FTPClient(cmd.Cmd):
         print("Local dir list:\n")
         print(body)
 
+    def lcd_handler(self,arg):
+        global current_local_dir
+        try:
+            if len(arg) == 0:
+                print("Syntax Error.\nUsage: lcd <dir_path>")
+                return
+            dir_path = process_path(arg[0],current_local_dir)
+            if not validate_path(dir_path, dir_check=True):
+                raise NotADirectoryError
+            current_local_dir = dir_path
+            print("Local directory changed successfully.")
+        except NotADirectoryError:
+            print(f"Path: {dir_path} is not a directory.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        
+
     def change_dir_handler(self, args):
         """Change the current server directory."""
         global current_server_dir
@@ -209,7 +231,6 @@ class FTPClient(cmd.Cmd):
             print("Renamed successfully.")
         else:
             self.handle_error(response)
-
 
     def handle_response(self, field: str):
         """Handle the server's response to a command."""
