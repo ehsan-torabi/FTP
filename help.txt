@@ -1,21 +1,21 @@
 Available Commands:
 
-    1. login username@password          - Authenticate with the FTP server.
-    2. upload <filename>                - Upload a file to the server.
-    3. download <filename>              - Download a file from the server.
-    4. mkdir <dir_name>                 - Create a new directory on the server.
-    5. rmdir <option=-r> <dir_name>     - Remove a directory from the server.You can use the "-r"
-                                          for remove none empty directory.
-    6. rm <filename>                    - Delete a file from the server.
-    7. cd <dir_name>                    - Change the current working directory.
-    8. pwd                              - Path of the current directory(On server).
-    9. lpwd                             - Path of the current directory(On local).
-    9. resume                           - Resume a previously interrupted file transfer (not implemented).
-    10. rename <old_name> <new_name>    - Rename a file on the server.
-    11. list or ls <path>               - List files in the path on the server.(default: current directory on server).
-    12. llist or lls <path>             - List files in the path on local .(default: current directory on local).
-    13. help                            - Show this help message.
-    14. quit or exit                    - Close the connection and exit the client.
-
+    1. login username@password                   - Authenticate with the FTP server.
+    2. upload <filename>   <dest/path/on/server> - Upload a file to the server.
+    3. download <filename> <dest/path/on/local>  - Download a file from the server.
+    4. mkdir <dir_name>                          - Create a new directory on the server.
+    5. rmdir <option=-r> <dir_name>              - Remove a directory from the server.You can use the "-r"
+                                                   for remove none empty directory.
+    6. rm <filename>                             - Delete a file from the server.
+    7. cd <dir_name>                             - Change the current working directory.
+    8. pwd                                       - Path of the current directory(On server).
+    9. lpwd                                      - Path of the current directory(On local).
+    9. resume                                    - Resume a previously interrupted file transfer (not implemented).
+    10. rename <old_name> <new_name>             - Rename a file on the server.
+    11. list or ls <path>                        - List files in the path on the server.(default: current directory on server).
+    12. llist or lls <path>                      - List files in the path on local .(default: current directory on local).
+    13. help or ?                                - Show short help message.
+    14. help full                                - Show this help message.
+    15. quit or exit                             - Close the connection and exit the client.
     Usage:
     Type the command followed by any required arguments.
