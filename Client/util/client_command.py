@@ -12,7 +12,7 @@ from utils.standard_query import StandardQuery
 
 # Set the current server and local directories
 current_server_dir = "."
-current_local_dir = os.path.dirname(os.path.abspath(__file__))
+current_local_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class FTPClient(cmd.Cmd):
@@ -140,6 +140,7 @@ class FTPClient(cmd.Cmd):
             dir_path = process_path(args[1], current_local_dir)
             if not validate_path(dir_path, dir_check=True):
                 print("Invalid path")
+                return
         if response["accept"]:
             transmit_port = int(response["data"]["transmit_port"])
             filename = os.path.basename(response["data"]["file_path"])

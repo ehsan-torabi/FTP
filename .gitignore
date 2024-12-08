@@ -2,3 +2,5 @@
 *.sqlite
 .vscode/*
 *.pyc
+logs/*
+*.log

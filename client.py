@@ -1,9 +1,5 @@
-import os
 import socket as s
 import sys
-
-# Add the parent directory to the system path for module imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Client.util.client_command import FTPClient
 
 
@@ -22,7 +18,7 @@ def connect_to_server(port):
     """Establish a connection to the FTP server."""
     try:
         with s.socket(s.AF_INET, s.SOCK_STREAM) as soc:
-            soc.connect(('', int(port)))
+            soc.connect(('127.0.0.1', int(port)))
             start_cycle(soc)
     except ValueError:
         print("Invalid port number. Please enter a valid integer.")
@@ -32,11 +28,12 @@ def connect_to_server(port):
         print(f"An error occurred while connecting: {e}")
 
 
-def main(addr,port):
+def main(port):
     connect_to_server(port)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python client.py <ip> <port>")
-    main(sys.argv[1],sys.argv[2])
+    if len(sys.argv) < 2:
+         main(sys.argv[1])
+    else:
+        main()
