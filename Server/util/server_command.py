@@ -1,11 +1,10 @@
 import os
 from shutil import rmtree
 from socket import socket
-
-from Server.server import SERVER_START_PATH
 from Server.util.db_manage import ServerDB
-from utils import receive_file, send_file
-from utils import request_parser as rp
+from utils.send_file import send_file 
+from utils.receive_file import retrieve_file
+from utils.request_parser import request_parser,response_parser 
 from utils.command_codes import code_command_dict
 from utils.ftp_status_code import FTPStatusCode as FTPSTATUS
 from utils.path_tools import process_path, validate_path
@@ -22,11 +21,11 @@ command_list = [
 ]
 
 # Change the current working directory to the server start path
-os.chdir(SERVER_START_PATH)
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 def user_request_process(data, conn):
     """Process the user request and return command, arguments, and current directory."""
-    user_request = rp.request_parser(data)
+    user_request = request_parser(data)
 
     command = code_command_dict.get(user_request["command"])
     if command is None:
@@ -95,7 +94,7 @@ def download_handler(args, user_current_directory, conn):
         file_data["transmit_port"] = port
         file_name = os.path.basename(file_data["file_path"])
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK, data=file_data).serialize_and_send(conn)
-        send_file.send_file(dir_path, transmit_socket, file_data["file_size"], file_name, False)
+        send_file(dir_path, transmit_socket, file_data["file_size"], file_name, False)
         transmit_socket.close()
     except PermissionError:
         StandardResponse(accept=False, status_code=FTPSTATUS.PERMISSION_DENIED).serialize_and_send(conn)
@@ -122,7 +121,7 @@ def upload_handler(args, data, user_current_directory, conn):
 
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
 
-        rec_result = receive_file.retrieve_file(
+        rec_result = retrieve_file(
             dir_path,
             data["transmit_port"],
             file_name,

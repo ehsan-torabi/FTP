@@ -1,11 +1,13 @@
 import os
+import sys
+sys.path.append(os.path.dirname(__file__))
 import socket
 import threading
 
-from Server.util import server_command
+from Server.util.server_command import command_parser
 from Server.util.logging_config import server_logger
 
-SERVER_START_PATH = os.path.dirname(os.path.abspath(__file__))
+
 
 
 class Server:
@@ -22,7 +24,7 @@ class Server:
     def bind_socket(self):
         while True:
             try:
-                self.sock.bind(("", self.port))
+                self.sock.bind(("127.0.0.1", self.port))
                 break
             except OSError:
                 self.port += 1
@@ -47,7 +49,7 @@ class Server:
                     data = conn.recv(4096)
                     if not data:
                         break
-                    server_command.command_parser(data, conn, addr)
+                    command_parser(data, conn, addr)
                 except ConnectionResetError:
                     server_logger.info(f"[-] Connection reset by {addr}")
                     break
@@ -59,11 +61,14 @@ class Server:
         self.sock.close()
 
 
-def main():
-    server = Server(8021)
+def main(port=8021):
+    server = Server(port)
     server.start()
     server.accept_connections()
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+         main(sys.argv[1])
+    else:
+        main()
