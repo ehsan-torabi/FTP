@@ -2,7 +2,7 @@ import os
 import pathlib
 
 
-def process_path(input_path,current_user_dir):
+def process_path(input_path, current_user_dir):
     """
     Process and normalize file paths from various input formats.
 
@@ -21,19 +21,18 @@ def process_path(input_path,current_user_dir):
     input_path = input_path.strip('\'"').strip()
 
     try:
-
         current_file_condition = ((input_path.startswith('./'))
                                   or (not input_path.startswith('/'))
-                                  or (input_path == os.path.basename(input_path)
-                                    and input_path not in ["~","..",".",current_user_dir,"-","/"]))
-        # Check if input_path is a name
-        if current_file_condition:
-            input_path = os.path.join(os.path.abspath(current_user_dir), input_path)
+                                  or (input_path == os.path.basename(input_path)))
 
+        # Check if input_path is a name
+        if current_file_condition and (input_path not in ["~", "..", ".", current_user_dir, "-", "/"]) :
+            input_path = os.path.join(os.path.abspath(current_user_dir), input_path)
         if input_path == "..":
             input_path = os.path.dirname(current_user_dir)
         # Expand user home directory (~)
         expanded_path = os.path.expanduser(input_path)
+        print(expanded_path)
 
         # Convert to absolute path
         abs_path = os.path.abspath(expanded_path)
@@ -48,7 +47,7 @@ def process_path(input_path,current_user_dir):
         return None
 
 
-def validate_path(processed_path, dir_check=False, file_check=False,check_exists=False):
+def validate_path(processed_path, dir_check=False, file_check=False, check_exists=False):
     """
     Validate the processed path.
 
@@ -195,7 +194,7 @@ def main():
     ]
 
     for path in test_paths:
-        processed = process_path(path,".")
+        processed = process_path(path, ".")
         print(f"Original: {path}")
         print(f"Processed: {processed}")
         print(f"Valid: {validate_path(processed)}\n")
