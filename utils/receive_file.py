@@ -5,8 +5,6 @@ from typing import Optional, Tuple
 
 from tqdm import tqdm
 
-from utils.AES_handler import AES_decryptor
-
 DELIMITER = '<SEPARATOR>'
 
 
@@ -46,7 +44,6 @@ def retrieve_file(
         # Create socket with timeout
         transmit_socket = socket.create_connection(("localhost", transmit_port), timeout=timeout)
 
-
         # Create progress bar if requested
         if progress_bar:
             progress = tqdm(
@@ -56,9 +53,6 @@ def retrieve_file(
                 unit_scale=True,
                 unit_divisor=1024
             )
-
-
-
 
         with open(full_file_path, "wb") as f:
             total_received = 0

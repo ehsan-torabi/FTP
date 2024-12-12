@@ -47,6 +47,7 @@ management.
    python server.py <port>
    ```
 3. The server will start and listen for incoming connections.
+
 - port is optional(Default=8021)
 
 ### Connecting with the Client
@@ -56,6 +57,7 @@ management.
    ```bash
    python client.py <port>
    ```
+
 - port is optional(Default=8021)
 
 ### Available Commands

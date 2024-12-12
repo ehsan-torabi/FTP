@@ -1,18 +1,16 @@
 import datetime
 import os
 import sqlite3 as sql3
-import time
 
-from Server.util.logging_config import server_logger
+from Server.logging_config import server_logger
 from utils.auth import password_hash, check_password
 
 
 class ServerDB:
-    def __init__(self,debug_flag:bool=False) -> None:
-        self.DBPATH = os.path.abspath("../db.sqlite")
+    def __init__(self, debug_flag: bool = False) -> None:
+        self.DBPATH = os.path.abspath("db.sqlite")
         self.debug_flag = debug_flag
         self.create_tables()
-
 
     def create_tables(self):
         query = """
@@ -96,7 +94,7 @@ class ServerDB:
             except sql3.Error as e:
                 server_logger.info(f"Error adding permission '{name}': {e}")
 
-    def add_user(self, username: str, password: str, role: str, access_path:str, perm_name: str = "restricted", ):
+    def add_user(self, username: str, password: str, role: str, access_path: str, perm_name: str = "restricted", ):
         query = """INSERT INTO Users (username, password, role, permName,accessPath) VALUES (?, ?, ?, ?,?);"""
         with  self.__getConnection() as con:
             if con is None:
@@ -124,11 +122,11 @@ class ServerDB:
                 user = cur.fetchone()
                 if user:
                     return {
-                        "id":user[0],
+                        "id": user[0],
                         "username": user[1],
                         "role": user[2],
                         "permName": user[3],
-                        "access_path":user[4],
+                        "access_path": user[4],
                         "read": bool(user[5]),
                         "write": bool(user[6]),
                     }
@@ -139,10 +137,8 @@ class ServerDB:
                 server_logger.info(f"Error fetching user by username {username}: {e}")
                 return None
 
-
-
     def get_userid_by_username(self, username: str) -> int:
-        query ="""SELECT id FROM Users WHERE username = ?
+        query = """SELECT id FROM Users WHERE username = ?
         """
         with self.__getConnection() as con:
             if con is None:
@@ -158,6 +154,7 @@ class ServerDB:
             except sql3.Error as e:
                 server_logger.info(f"Error fetching user by ID {username}: {e}")
                 return None
+
     def get_user_by_id(self, user_id: int) -> dict:
         query = """SELECT u.username, u.role, u.permName,u.accessPath, p.read, p.write
                    FROM Users u
@@ -174,7 +171,7 @@ class ServerDB:
                         "username": user[0],
                         "role": user[1],
                         "permName": user[2],
-                        "access_path":user[3],
+                        "access_path": user[3],
                         "read": bool(user[4]),
                         "write": bool(user[5]),
                     }
@@ -212,14 +209,14 @@ class ServerDB:
             with  self.__getConnection() as con:
                 if con is None:
                     return
-                con.execute(query, (user_id, auth_key,str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
+                con.execute(query, (user_id, auth_key, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
                 con.commit()
         except sql3.IntegrityError:
-                con.close()
-                self.remove_user_logged_in(user_id)
-                self.add_user_logged_in(user_id, auth_key)
+            con.close()
+            self.remove_user_logged_in(user_id)
+            self.add_user_logged_in(user_id, auth_key)
         except sql3.Error as e:
-                server_logger.info(f"Error adding logged in user ID '{user_id}': {e}")
+            server_logger.info(f"Error adding logged in user ID '{user_id}': {e}")
 
     def get_user_by_login_key(self, auth_key: str) -> dict:
         query = """SELECT u.username, u.role, u.permName,u.accessPath, p.read, p.write
@@ -238,7 +235,7 @@ class ServerDB:
                         "username": user[0],
                         "role": user[1],
                         "permName": user[2],
-                        "access_path":user[3],
+                        "access_path": user[3],
                         "read": bool(user[4]),
                         "write": bool(user[5]),
                     }
@@ -261,13 +258,12 @@ class ServerDB:
                 server_logger.info(f"Error checking if user {user_id} is logged in: {e}")
                 return False
         if check:
-                login_time = datetime.datetime.fromisoformat(check[0])
-                if datetime.datetime.now() - login_time <= datetime.timedelta(minutes=5):
-                    return True
-                else:
-                    self.remove_user_logged_in(user_id)
+            login_time = datetime.datetime.fromisoformat(check[0])
+            if datetime.datetime.now() - login_time <= datetime.timedelta(minutes=5):
+                return True
+            else:
+                self.remove_user_logged_in(user_id)
         return False
-
 
     def remove_user_logged_in(self, user_id: int):
         query = """DELETE FROM LoggedIn WHERE userID = ?;"""
@@ -307,12 +303,11 @@ class ServerDB:
         return False
 
 
-
 def main():
     db = ServerDB()
     db.add_permission("restricted", True, False)
-    db.add_user("ehsan", "123456", "user",access_path="/home/ehsan/Desktop")
-    db.add_user("mohammad", "12345678", "admin",access_path="/home")
+    db.add_user("ehsan", "123456", "user", access_path="/home/ehsan/Desktop")
+    db.add_user("mohammad", "12345678", "admin", access_path="/home")
 
     # Example usage
     # db.add_user_logged_in(1, "auth_key_12345")

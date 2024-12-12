@@ -1,6 +1,8 @@
 import socket as s
 import sys
-from Client.util.client_command import FTPClient
+
+from Client.client_command import FTPClient
+
 
 def start_cycle(usr_socket):
     """Continuously prompt the user for input and process commands."""
@@ -33,6 +35,6 @@ def main(port=8021):
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
-         main(int(sys.argv[1]))
+        main(int(sys.argv[1]))
     else:
         main()

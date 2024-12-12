@@ -1,12 +1,11 @@
 import hashlib
+import logging
 import pathlib
 import socket
-import logging
 from random import randint
 from typing import Dict, Tuple
 
 from tqdm import tqdm
-
 
 BUFFER_SIZE = 4096
 MAX_PORT_ATTEMPTS = 100  # Limit port binding attempts
@@ -105,7 +104,6 @@ def send_file(
 
         # Accept connection
         transmit_connection, addr = transmit_socket.accept()
-
 
         # Optional progress bar
         progress = None

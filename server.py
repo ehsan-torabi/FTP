@@ -1,13 +1,9 @@
-import os
-import sys
-sys.path.append(os.path.dirname(__file__))
 import socket
+import sys
 import threading
 
-from Server.util.server_command import command_parser
-from Server.util.logging_config import server_logger
-
-
+from Server.logging_config import server_logger
+from Server.server_command import command_parser
 
 
 class Server:
@@ -69,6 +65,6 @@ def main(port=8021):
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
-         main(int(sys.argv[1]))
+        main(int(sys.argv[1]))
     else:
         main()

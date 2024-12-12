@@ -12,11 +12,10 @@ from utils.path_tools import process_path, validate_path
 from utils.send_file import get_file_info, create_transmit_socket
 from utils.standard_query import StandardQuery
 
-
 current_local_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def login_handler(user_socket)-> (str,str):
+def login_handler(user_socket) -> (str, str):
     username = input("username: ")
     password = getpass.getpass()
     data = authorize(username, password, user_socket)
@@ -190,10 +189,9 @@ class FTPClient(cmd.Cmd):
         self.handle_response('', )
 
     def local_list_handler(self, args):
-        dir_path = process_path(current_local_dir,current_local_dir)
+        dir_path = process_path(current_local_dir, current_local_dir)
         if args:
-            dir_path = process_path(args[0],current_local_dir)
-
+            dir_path = process_path(args[0], current_local_dir)
 
         ls = os.listdir(dir_path)
         ls.sort()
@@ -212,13 +210,13 @@ class FTPClient(cmd.Cmd):
         print("Local dir list:\n")
         print(body)
 
-    def lcd_handler(self,arg):
+    def lcd_handler(self, arg):
         global current_local_dir
         try:
             if len(arg) == 0:
                 print("Syntax Error.\nUsage: lcd <dir_path>")
                 return
-            dir_path = process_path(arg[0],current_local_dir)
+            dir_path = process_path(arg[0], current_local_dir)
             if not validate_path(dir_path, dir_check=True):
                 raise NotADirectoryError
             current_local_dir = dir_path
@@ -227,7 +225,6 @@ class FTPClient(cmd.Cmd):
             print(f"Path: {dir_path} is not a directory.")
         except Exception as e:
             print(f"An error occurred: {e}")
-        
 
     def change_dir_handler(self, args):
         """Change the current server directory."""
@@ -279,11 +276,11 @@ class FTPClient(cmd.Cmd):
         """Remove a directory on the server."""
         if input("Are you sure you want to remove this directory? [y/N]: ") == "y":
             if len(args) > 0 and "-r" in args:
-                data = {"method":"r"} # r Represents normal remove directory
+                data = {"method": "r"}  # r Represents normal remove directory
                 args = [i for i in args if i != "-r"]
             else:
-                data = {"method":"n"} # n Represents normal remove directory
-            query = StandardQuery(self.auth_token, "rmdir", self.access_path, command_args=args,data=data)
+                data = {"method": "n"}  # n Represents normal remove directory
+            query = StandardQuery(self.auth_token, "rmdir", self.access_path, command_args=args, data=data)
             query.serialize_and_send(self.user_socket)
             response = rp.response_parser(self.user_socket.recv(4096))
             if response["accept"]:
@@ -324,7 +321,7 @@ class FTPClient(cmd.Cmd):
 
     def help_full(self):
         """Display help information."""
-        file_path = os.path.abspath("/home/ehsan/Workspace/FTP/help.txt")
+        file_path = os.path.abspath("/help.txt")
         try:
             with open(file_path, "rt") as f:
                 help_content = f.read()
