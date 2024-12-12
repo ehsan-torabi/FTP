@@ -1,2 +1,3 @@
 pycryptodome==3.21.0
 tqdm==4.67.1
+bcrypt
