@@ -1,18 +1,33 @@
 import cmd
+import getpass
 import os
 import shutil
 import sys
 
 from utils import receive_file, send_file
 from utils import request_parser as rp
+from utils.auth import authorize
 from utils.ftp_status_code import FTPStatusCode as FTPStatus
 from utils.path_tools import process_path, validate_path
 from utils.send_file import get_file_info, create_transmit_socket
 from utils.standard_query import StandardQuery
 
-# Set the current server and local directories
-current_server_dir = "."
+
 current_local_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def login_handler(user_socket)-> (str,str):
+    username = input("username: ")
+    password = getpass.getpass()
+    data = authorize(username, password, user_socket)
+    if data:
+        auth_token = data['auth_token']
+        access_path = data['access_path']
+        print("You are logged in.")
+        return auth_token, access_path
+    else:
+        print("Username or password is incorrect.")
+        return None, None
 
 
 class FTPClient(cmd.Cmd):
@@ -22,10 +37,12 @@ class FTPClient(cmd.Cmd):
     def __init__(self, user_socket):
         super().__init__()
         self.user_socket = user_socket
-
+        auth_token, access_path = login_handler(self.user_socket)
+        self.auth_token = auth_token
+        self.access_path = access_path
     def do_login(self, arg):
         """Handle user login."""
-        pass
+        login_handler(self.user_socket)
 
     def do_upload(self, arg):
         """Upload a file to the server."""
@@ -48,7 +65,7 @@ class FTPClient(cmd.Cmd):
 
     def do_pwd(self, arg):
         """Print current server directory."""
-        print(current_server_dir)
+        print(self.access_path)
 
     def do_rename(self, arg):
         """Rename a file on the server."""
@@ -117,8 +134,8 @@ class FTPClient(cmd.Cmd):
         transmit_socket, port = create_transmit_socket()
         file_data["transmit_port"] = port
         file_name = os.path.basename(file_data["file_path"])
-        StandardQuery(auth_token="1234", command="upload", command_args=arg,
-                      current_dir=current_server_dir, data=file_data).serialize_and_send(self.user_socket)
+        StandardQuery(self.auth_token, command="upload", command_args=arg,
+                      current_dir=self.access_path, data=file_data).serialize_and_send(self.user_socket)
         response = rp.response_parser(self.user_socket.recv(4096))
         if response["accept"]:
             send_file.send_file(dir_path, transmit_socket, file_data["file_size"], file_name, True)
@@ -137,8 +154,8 @@ class FTPClient(cmd.Cmd):
             self.handle_error(response)
 
     def download_file_handler(self, args):
-        StandardQuery(auth_token="1234", command="download", command_args=args,
-                      current_dir=current_server_dir).serialize_and_send(self.user_socket)
+        StandardQuery(self.auth_token, command="download", command_args=args,
+                      current_dir=self.access_path).serialize_and_send(self.user_socket)
         response = rp.response_parser(self.user_socket.recv(4096))
         dir_path = current_local_dir
         if len(args) > 1:
@@ -164,7 +181,7 @@ class FTPClient(cmd.Cmd):
     def list_handler(self, args):
         """List files in the current server directory."""
         terminal_width = shutil.get_terminal_size().columns
-        query = StandardQuery("1234", "list", current_server_dir, command_args=args,
+        query = StandardQuery(self.auth_token, "list", self.access_path, command_args=args,
                               data={"terminal_width": terminal_width})
         query.serialize_and_send(self.user_socket)
         print("Server dir list:\n")
@@ -212,19 +229,18 @@ class FTPClient(cmd.Cmd):
 
     def change_dir_handler(self, args):
         """Change the current server directory."""
-        global current_server_dir
-        query = StandardQuery("1234", "cd", current_server_dir, command_args=args)
+        query = StandardQuery(self.auth_token, "cd", self.access_path, command_args=args)
         query.serialize_and_send(self.user_socket)
         response = rp.response_parser(self.user_socket.recv(4096))
         if response["accept"]:
-            current_server_dir = response["data"]["current_directory"]
+            self.access_path = response["data"]["current_directory"]
             print("Changed directory successfully.")
         else:
             self.handle_error(response)
 
     def rename_handler(self, args):
         """Rename a file on the server."""
-        query = StandardQuery("1234", "rename", current_server_dir, command_args=args)
+        query = StandardQuery(self.auth_token, "rename", self.access_path, command_args=args)
         query.serialize_and_send(self.user_socket)
         response = rp.response_parser(self.user_socket.recv(4096))
         if response["accept"]:
@@ -249,7 +265,7 @@ class FTPClient(cmd.Cmd):
 
     def make_dir_handler(self, args):
         """Make a directory on the server."""
-        query = StandardQuery("1234", "mkdir", current_server_dir, command_args=args)
+        query = StandardQuery(self.auth_token, "mkdir", self.access_path, command_args=args)
         query.serialize_and_send(self.user_socket)
         response = rp.response_parser(self.user_socket.recv(4096))
         if response["accept"]:
@@ -265,7 +281,7 @@ class FTPClient(cmd.Cmd):
                 args = [i for i in args if i != "-r"]
             else:
                 data = {"method":"n"} # n Represents normal remove directory
-            query = StandardQuery("1234", "rmdir", current_server_dir, command_args=args,data=data)
+            query = StandardQuery(self.auth_token, "rmdir", self.access_path, command_args=args,data=data)
             query.serialize_and_send(self.user_socket)
             response = rp.response_parser(self.user_socket.recv(4096))
             if response["accept"]:
@@ -276,7 +292,7 @@ class FTPClient(cmd.Cmd):
     def remove_file_handler(self, args):
         """Remove a file on the server."""
         if input("Are you sure you want to remove this file? [y/N]: ") == "y":
-            query = StandardQuery("1234", "rm", current_server_dir, command_args=args)
+            query = StandardQuery(self.auth_token, "rm", self.access_path, command_args=args)
             query.serialize_and_send(self.user_socket)
             response = rp.response_parser(self.user_socket.recv(4096))
             if response["accept"]:
@@ -298,9 +314,10 @@ class FTPClient(cmd.Cmd):
             FTPStatus.SYNTAX_ERROR_IN_PARAMETERS: "Syntax error.",
             FTPStatus.FILE_EXISTS_ERROR: "File exists.",
             FTPStatus.LOCAL_ERROR_IN_PROCESSING: "Unknown error.",
+            FTPStatus.NOT_LOGGED_IN: "You are not logged in.\nPlease log in with 'login' command.",
         }
         print(error_messages.get(status_code, "An unknown error occurred."))
-        if "data" in response:
+        if response["data"]:
             print(response["data"])
 
     def help_full(self):

@@ -2,6 +2,7 @@ import os
 from shutil import rmtree
 from socket import socket
 from Server.util.db_manage import ServerDB
+from utils.auth import generate_user_auth_hash
 from utils.send_file import send_file 
 from utils.receive_file import retrieve_file
 from utils.request_parser import request_parser,response_parser 
@@ -31,10 +32,17 @@ def user_request_process(data, conn):
     if command is None:
         send_command_not_implemented(conn)
         return None, None, None, None
-
+    auth_key = user_request["auth_token"]
     args = user_request["command_args"]
     user_current_directory = user_request["current_dir"]
     data = user_request["data"]
+
+    if command == "login":
+        return command, args, None, None
+    db = ServerDB()
+    if not db.check_user_login_by_auth_key(auth_key):
+        send_logged_in_error(conn)
+        return None, None, None, None
 
     if not user_current_directory:
         send_syntax_error(conn)
@@ -78,6 +86,10 @@ def command_parser(data, conn, addr):
 def send_command_not_implemented(conn):
     """Send a command not implemented response to the client."""
     StandardResponse(accept=False, status_code=FTPSTATUS.COMMAND_NOT_IMPLEMENTED).serialize_and_send(conn)
+
+def send_logged_in_error(conn):
+    """Send a User not logged in response to the client."""
+    StandardResponse(accept=False, status_code=FTPSTATUS.NOT_LOGGED_IN).serialize_and_send(conn)
 
 
 def send_syntax_error(conn):
@@ -204,24 +216,26 @@ def handle_dir_command(user_current_directory, conn):
     StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK, data=data).serialize_and_send(conn)
 
 
-def login_handler(args: list, conn: socket, addr):
+def login_handler(args: dict, conn: socket, addr):
     """Handle user login."""
     global loggedInUsers
     try:
-        username = f"{args[0].split('@')[0]},{addr[0]}:{addr[1]}"
-        if username in loggedInUsers:
-            conn.send(f"{FTPSTATUS.USER_LOGGED_IN}".encode("utf-8"))
-            return
-
+        username = args["0"].split('@')[0]
+        password = args["0"].split('@')[1]
         db = ServerDB()
-        user_valid = db.validate_user(args[0].split('@')[0], args[0].split('@')[1])
+        user_valid = db.validate_user(username, password)
         if user_valid:
-            loggedInUsers.append(username)
-            conn.send(f"{FTPSTATUS.USER_LOGGED_IN}".encode("utf-8"))
+            user_auth_key = generate_user_auth_hash(username,addr)
+            user = db.get_user_by_username(username)
+            db.add_user_logged_in(user["id"],user_auth_key)
+            StandardResponse(accept=True, status_code=FTPSTATUS.USER_LOGGED_IN,data={"access_path":user["access_path"],"auth_token":user_auth_key}).serialize_and_send(conn)
         else:
-            conn.send(f"{FTPSTATUS.NOT_LOGGED_IN}".encode("utf-8"))
+            StandardResponse(accept=False, status_code=FTPSTATUS.NOT_LOGGED_IN).serialize_and_send(conn)
     except IndexError:
-        conn.send(f"{FTPSTATUS.SYNTAX_ERROR_COMMAND_UNRECOGNIZED}".encode("utf-8"))
+        StandardResponse(accept=False, status_code=FTPSTATUS.SYNTAX_ERROR_COMMAND_UNRECOGNIZED).serialize_and_send(conn)
+    except Exception as e:
+        StandardResponse(accept=False, status_code=FTPSTATUS.LOCAL_ERROR_IN_PROCESSING, data=str(e)).serialize_and_send(
+            conn)
 
 
 def list_handler(args: dict[str: str], user_current_dir: str, request_data, conn: socket):

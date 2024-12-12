@@ -1,6 +1,6 @@
 Available Commands:
 
-    1. login username@password                   - Authenticate with the FTP server.
+    1. login                                     - Authenticate with the FTP server.
     2. upload <filename>   <dest/path/on/server> - Upload a file to the server.
     3. download <filename> <dest/path/on/local>  - Download a file from the server.
     4. mkdir <dir_name>                          - Create a new directory on the server.
