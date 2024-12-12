@@ -7,7 +7,6 @@ from typing import Dict, Tuple
 
 from tqdm import tqdm
 
-from utils.AES_handler import AES_encryptor
 
 BUFFER_SIZE = 4096
 MAX_PORT_ATTEMPTS = 100  # Limit port binding attempts
@@ -127,7 +126,6 @@ def send_file(
                     if not bytes_read:
                         transmit_connection.send(b"EOF")
                         break
-
                     transmit_connection.send(bytes_read)
 
                     total_sent += len(bytes_read)
