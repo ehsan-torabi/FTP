@@ -40,11 +40,11 @@ class FTPClient(cmd.Cmd):
         auth_token, access_path = login_handler(self.user_socket)
         self.auth_token = auth_token
         self.access_path = access_path
+
     def do_login(self, arg):
         """Handle user login."""
         auth_token, access_path = login_handler(self.user_socket)
         self.auth_token = auth_token
-        self.access_path = access_path
 
     def do_upload(self, arg):
         """Upload a file to the server."""
