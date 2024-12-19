@@ -132,7 +132,7 @@ class FTPClient(cmd.Cmd):
                 print("Invalid path")
 
         file_data = get_file_info(dir_path)
-        transmit_socket, port = create_transmit_socket()
+        transmit_socket, port = create_transmit_socket(self.user_socket.getsockname()[0])
         file_data["transmit_port"] = port
         file_name = os.path.basename(file_data["file_path"])
         StandardQuery(self.auth_token, command="upload", command_args=arg,
@@ -170,7 +170,7 @@ class FTPClient(cmd.Cmd):
             filesize = int(response["data"]["file_size"])
             transmit_buffer_size = int(response["data"]["buffer_size"])
             checksum = response["data"]["checksum"]
-            transmit_result = receive_file.retrieve_file(dir_path, transmit_port, filename, filesize,
+            transmit_result = receive_file.retrieve_file(self.user_socket.getsockname()[0],dir_path, transmit_port, filename, filesize,
                                                          transmit_buffer_size, checksum)
             if transmit_result:
                 print("File downloaded successfully")

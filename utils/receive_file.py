@@ -9,6 +9,7 @@ DELIMITER = '<SEPARATOR>'
 
 
 def retrieve_file(
+        socket_addr:str,
         file_path: str,
         transmit_port: int,
         file_name: str,
@@ -42,7 +43,7 @@ def retrieve_file(
 
     try:
         # Create socket with timeout
-        transmit_socket = socket.create_connection(("localhost", transmit_port), timeout=timeout)
+        transmit_socket = socket.create_connection((socket_addr, transmit_port), timeout=timeout)
 
         # Create progress bar if requested
         if progress_bar:

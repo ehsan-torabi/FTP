@@ -105,7 +105,8 @@ def download_handler(args, user_current_directory, conn):
     try:
         dir_path = process_path(args["0"], user_current_directory)
         file_data = get_file_info(dir_path)
-        transmit_socket, port = create_transmit_socket()
+        
+        transmit_socket, port = create_transmit_socket(conn.getsockname()[0])
         file_data["transmit_port"] = port
         file_name = os.path.basename(file_data["file_path"])
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK, data=file_data).serialize_and_send(conn)
@@ -136,6 +137,7 @@ def upload_handler(args, data, user_current_directory, conn):
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
 
         rec_result = retrieve_file(
+            conn.getsockname()[0],
             dir_path,
             data["transmit_port"],
             file_name,

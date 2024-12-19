@@ -7,20 +7,21 @@ from Server.server_command import command_parser
 
 
 class Server:
-    def __init__(self, port):
-        self.port = port
+    def __init__(self,ip, port):
+        self.port = int(port)
+        self.ip = str(ip)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def start(self):
         self.bind_socket()
         self.sock.listen(5)  # Allow up to 5 connections
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_logger.info(f"Server running on port {self.port}")
+        server_logger.info(f"Server running on {self.ip}:{self.port}")
 
     def bind_socket(self):
         while True:
             try:
-                self.sock.bind(("127.0.0.1", self.port))
+                self.sock.bind((self.ip, self.port))
                 break
             except OSError:
                 self.port += 1
@@ -45,6 +46,7 @@ class Server:
                     data = conn.recv(4096)
                     if not data:
                         break
+                    
                     command_parser(data, conn, addr)
                 except ConnectionResetError:
                     server_logger.info(f"[-] Connection reset by {addr}")
@@ -57,14 +59,14 @@ class Server:
         self.sock.close()
 
 
-def main(port=8021):
-    server = Server(port)
+def main(ip="127.0.0.1",port=8021):
+    server = Server(ip,port)
     server.start()
     server.accept_connections()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        main(int(sys.argv[1]))
+    if len(sys.argv) == 3:
+        main(sys.argv[1],sys.argv[2])
     else:
         main()
