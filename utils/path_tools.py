@@ -32,7 +32,7 @@ def process_path(input_path, current_user_dir):
             input_path = os.path.dirname(current_user_dir)
         # Expand user home directory (~)
         expanded_path = os.path.expanduser(input_path)
-        print(expanded_path)
+
 
         # Convert to absolute path
         abs_path = os.path.abspath(expanded_path)

@@ -63,7 +63,7 @@ def command_parser(data, conn, addr):
     try:
         command_handlers = {
             "login": lambda: login_handler(args, conn, addr),
-            "upload": lambda: upload_handler(args, data, user_current_directory, conn),
+            "upload": lambda: upload_handler(args, data, user_current_directory,addr, conn),
             "download": lambda: download_handler(args, user_current_directory, conn),
             "cd": lambda: change_dir_handler(args, user_current_directory, conn),
             "pwd": lambda: handle_dir_command(user_current_directory, conn),
@@ -105,7 +105,7 @@ def download_handler(args, user_current_directory, conn):
     try:
         dir_path = process_path(args["0"], user_current_directory)
         file_data = get_file_info(dir_path)
-        
+        server_logger.info(f"create transmit socket on {conn.getsockname()[0]}")
         transmit_socket, port = create_transmit_socket(conn.getsockname()[0])
         file_data["transmit_port"] = port
         file_name = os.path.basename(file_data["file_path"])
@@ -121,7 +121,7 @@ def download_handler(args, user_current_directory, conn):
             conn)
 
 
-def upload_handler(args, data, user_current_directory, conn):
+def upload_handler(args, data, user_current_directory,addr, conn):
     """Handle the upload request"""
     file_name = ""
     try:
@@ -135,9 +135,9 @@ def upload_handler(args, data, user_current_directory, conn):
         server_logger.info(f"Upload request for file: {file_name} to directory: {dir_path}")
 
         StandardResponse(accept=True, status_code=FTPSTATUS.COMMAND_OK).serialize_and_send(conn)
-
+        server_logger.info(f"Start reciving from {addr[0]}:{data["transmit_port"]}")
         rec_result = retrieve_file(
-            conn.getsockname()[0],
+            addr[0],
             dir_path,
             data["transmit_port"],
             file_name,
@@ -146,7 +146,7 @@ def upload_handler(args, data, user_current_directory, conn):
             data["checksum"],
             False
         )
-
+        
         if rec_result:
             server_logger.info(f"Successful upload of file: {file_name}")
             StandardResponse(accept=True, status_code=FTPSTATUS.REQUESTED_FILE_ACTION_OK).serialize_and_send(conn)
