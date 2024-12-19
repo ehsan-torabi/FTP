@@ -44,7 +44,7 @@ def retrieve_file(
     try:
         # Create socket with timeout
         transmit_socket = socket.create_connection((socket_addr, transmit_port), timeout=timeout)
-
+        print(transmit_socket.getsockname())
         # Create progress bar if requested
         if progress_bar:
             progress = tqdm(
