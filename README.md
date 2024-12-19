@@ -44,21 +44,23 @@ management.
 1. Navigate to the server directory.
 2. Run the server script:
    ```bash
-   python server.py <port>
+   python server.py "<ip>" <port>
    ```
 3. The server will start and listen for incoming connections.
 
 - port is optional(Default=8021)
+- ip is optional(Default=localhost)
 
 ### Connecting with the Client
 
 1. Navigate to the client directory.
 2. Run the client script:
    ```bash
-   python client.py <port>
+   python client.py "<ip>" <port>
    ```
 
 - port is optional(Default=8021)
+- ip is optional(Default=localhost)
 
 ### Available Commands
 
