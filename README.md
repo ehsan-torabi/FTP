@@ -39,10 +39,26 @@ management.
 
 ## Usage
 
+1.  Add "database_path" to config.json in main project directory.(Database created in this path if not exist.)
+
+### Managing Database
+1. Run the manage script:
+   ```bash
+   python manage.py
+   ```
+### Available Manage Commands
+    1. add_user <username> <password> <access_path>      - Add a new user to the database.
+    2. get_user <username>                               - Retrieve user information by username.
+    3. remove_user <username>                            - Remove a user from the database.
+    4. get_all_user [<limit>]                            - Retrieve all users from the database. 
+                                                            <limit> is optional. Default is 20.
+    5. help or ?                                        - Show short help message.
+    6. quit or exit                                     - Close the connection and exit the client.
+
 ### Starting the Server
 
-1. Navigate to the server directory.
-2. Run the server script:
+
+1. Run the server script:
    ```bash
    python server.py "<ip>" <port>
    ```
@@ -53,8 +69,8 @@ management.
 
 ### Connecting with the Client
 
-1. Navigate to the client directory.
-2. Run the client script:
+
+1. Run the client script:
    ```bash
    python client.py "<ip>" <port>
    ```
@@ -62,7 +78,7 @@ management.
 - port is optional(Default=8021)
 - ip is optional(Default=localhost)
 
-### Available Commands
+### Available Client Commands
 
     1. login                                     - Authenticate with the FTP server.
     2. upload <filename>   <dest/path/on/server> - Upload a file to the server.
