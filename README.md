@@ -113,3 +113,5 @@ This project is licensed under the MIT License. See the LICENSE file for more de
 
 - [Python Documentation](https://docs.python.org/3/)
 - [Socket Programming in Python](https://realpython.com/python-sockets/)
+- [Bcrypt](https://en.wikipedia.org/wiki/Bcrypt)
+- [MD5](https://en.wikipedia.org/wiki/MD5)
