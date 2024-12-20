@@ -21,6 +21,8 @@ management.
 - Socket Programming
 - Object-Oriented Programming
 - File System Operations
+- Bcrypt password-hashing function
+- SHA-256 checksum
 
 ## Installation
 
