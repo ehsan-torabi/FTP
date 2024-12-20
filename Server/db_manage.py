@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import sqlite3 as sql3
 
@@ -7,8 +8,23 @@ from utils.auth import password_hash, check_password
 
 
 class ServerDB:
-    def __init__(self, debug_flag: bool = False) -> None:
-        self.DBPATH = os.path.abspath("db.sqlite")
+    def __init__(self, debug_flag: bool = False, config_path: str = "config.json") -> None:
+        self.logger = server_logger
+        if not debug_flag:
+            self.logger.disabled = True
+        try:
+            for root, dirs, files in os.walk(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))):
+                if os.path.basename(config_path) in files:
+                    config_path = os.path.join(root, config_path)
+
+            with open(os.path.relpath(config_path), "r") as f:
+                self.DBPATH = os.path.relpath(json.load(f)["database_path"])
+        except FileNotFoundError:
+            print("Config file not found")
+        except json.decoder.JSONDecodeError:
+            print("Config file format is incorrect")
+        except KeyError:
+            print("Config file format is incorrect")
         self.debug_flag = debug_flag
         self.create_tables()
 
@@ -50,16 +66,16 @@ class ServerDB:
                     if q.strip():
                         con.execute(q)
                         if self.debug_flag:
-                            server_logger.info("Executed: ", q.strip())
-                server_logger.info("Database tables created or verified.")
+                            self.logger.info("Executed: ", q.strip())
+                self.logger.info("Database tables created or verified.")
             except sql3.Error as e:
-                server_logger.info(f"Error creating tables: {e}")
+                self.logger.info(f"Error creating tables: {e}")
 
     def __getConnection(self):
         try:
             return sql3.connect(self.DBPATH)
         except sql3.Error as e:
-            server_logger.info(f"Error connecting to database: {e}")
+            self.logger.info(f"Error connecting to database: {e}")
             return None
 
     def validate_user(self, username: str, password: str) -> bool:
@@ -78,8 +94,26 @@ class ServerDB:
                 else:
                     return False
             except sql3.Error as e:
-                server_logger.info(f"Error validating user {username}: {e}")
+                self.logger.info(f"Error validating user {username}: {e}")
                 return False
+
+    def get_all_user(self, limit: int = 20):
+        query = """SELECT id, username, role, permName,accessPath FROM Users;"""
+        with self.__getConnection() as con:
+            if con is None:
+                return None
+            try:
+                cur = con.execute(query)
+                users = cur.fetchmany(limit)
+                if users:
+                    return [
+                        {"id": u[0], "username": u[1], "role": u[2], "access_path": u[4]} for u in users]
+                else:
+                    self.logger.info(f"not found!")
+                    return None
+            except sql3.Error as e:
+                self.logger.info(f"Error fetching users: {e}")
+                return None
 
     def add_permission(self, name: str, read: bool, write: bool):
         query = """INSERT INTO Permission (name, read, write) VALUES (?, ?, ?);"""
@@ -90,9 +124,9 @@ class ServerDB:
                 con.execute(query, (name, read, write))
                 con.commit()
             except sql3.IntegrityError:
-                server_logger.info(f"Permission '{name}' already exists!")
+                self.logger.info(f"Permission '{name}' already exists!")
             except sql3.Error as e:
-                server_logger.info(f"Error adding permission '{name}': {e}")
+                self.logger.info(f"Error adding permission '{name}': {e}")
 
     def add_user(self, username: str, password: str, role: str, access_path: str, perm_name: str = "restricted", ):
         query = """INSERT INTO Users (username, password, role, permName,accessPath) VALUES (?, ?, ?, ?,?);"""
@@ -105,9 +139,9 @@ class ServerDB:
                 con.execute(query, (username, hashed_password, role, perm_name, access_path))
                 con.commit()
             except sql3.IntegrityError:
-                server_logger.info(f"User '{username}' already exists!")
+                self.logger.info(f"User '{username}' already exists!")
             except sql3.Error as e:
-                server_logger.info(f"Error adding user '{username}': {e}")
+                self.logger.info(f"Error adding user '{username}': {e}")
 
     def get_user_by_username(self, username: str) -> dict:
         query = """SELECT u.id, u.username, u.role, u.permName,u.accessPath, p.read, p.write
@@ -131,10 +165,10 @@ class ServerDB:
                         "write": bool(user[6]),
                     }
                 else:
-                    server_logger.info(f"User '{username}' not found!")
+                    self.logger.info(f"User '{username}' not found!")
                     return None
             except sql3.Error as e:
-                server_logger.info(f"Error fetching user by username {username}: {e}")
+                self.logger.info(f"Error fetching user by username {username}: {e}")
                 return None
 
     def get_userid_by_username(self, username: str) -> int:
@@ -149,10 +183,10 @@ class ServerDB:
                 if userid:
                     return int(userid[0])
                 else:
-                    server_logger.info(f"User username '{username}' not found!")
+                    self.logger.info(f"User username '{username}' not found!")
                     return None
             except sql3.Error as e:
-                server_logger.info(f"Error fetching user by ID {username}: {e}")
+                self.logger.info(f"Error fetching user by ID {username}: {e}")
                 return None
 
     def get_user_by_id(self, user_id: int) -> dict:
@@ -176,10 +210,10 @@ class ServerDB:
                         "write": bool(user[5]),
                     }
                 else:
-                    server_logger.info(f"User ID '{user_id}' not found!")
+                    self.logger.info(f"User ID '{user_id}' not found!")
                     return None
             except sql3.Error as e:
-                server_logger.info(f"Error fetching user by ID {user_id}: {e}")
+                self.logger.info(f"Error fetching user by ID {user_id}: {e}")
                 return None
 
     def get_permission_by_name(self, name: str) -> dict:
@@ -197,10 +231,10 @@ class ServerDB:
                         "write": bool(permission[2]),
                     }
                 else:
-                    server_logger.info(f"Permission '{name}' not found!")
+                    self.logger.info(f"Permission '{name}' not found!")
                     return None
             except sql3.Error as e:
-                server_logger.info(f"Error fetching permission by name {name}: {e}")
+                self.logger.info(f"Error fetching permission by name {name}: {e}")
                 return None
 
     def add_user_logged_in(self, user_id: int, auth_key: str):
@@ -216,7 +250,7 @@ class ServerDB:
             self.remove_user_logged_in(user_id)
             self.add_user_logged_in(user_id, auth_key)
         except sql3.Error as e:
-            server_logger.info(f"Error adding logged in user ID '{user_id}': {e}")
+            self.logger.info(f"Error adding logged in user ID '{user_id}': {e}")
 
     def get_user_by_login_key(self, auth_key: str) -> dict:
         query = """SELECT u.username, u.role, u.permName,u.accessPath, p.read, p.write
@@ -240,10 +274,10 @@ class ServerDB:
                         "write": bool(user[5]),
                     }
                 else:
-                    server_logger.info(f"Auth key '{auth_key}' not valid!")
+                    self.logger.info(f"Auth key '{auth_key}' not valid!")
                     return None
             except sql3.Error as e:
-                server_logger.info(f"Error fetching user by login key {auth_key}: {e}")
+                self.logger.info(f"Error fetching user by login key {auth_key}: {e}")
                 return None
 
     def check_user_logged_in(self, user_id: int) -> bool:
@@ -255,7 +289,7 @@ class ServerDB:
                 cur = con.execute(query, (user_id,))
                 check = cur.fetchone()
             except sql3.Error as e:
-                server_logger.info(f"Error checking if user {user_id} is logged in: {e}")
+                self.logger.info(f"Error checking if user {user_id} is logged in: {e}")
                 return False
         if check:
             login_time = datetime.datetime.fromisoformat(check[0])
@@ -273,10 +307,24 @@ class ServerDB:
             try:
                 con.execute(query, (user_id,))
                 con.commit()
-                server_logger.info(f"User ID '{user_id}' logged out.")
+                self.logger.info(f"User ID '{user_id}' removed..")
                 return
             except sql3.Error as e:
-                server_logger.info(f"Error logging out user ID '{user_id}': {e}")
+                self.logger.info(f"Error logging out user ID '{user_id}': {e}")
+                return
+
+    def remove_user(self, username: str):
+        query = """DELETE FROM Users WHERE username = ?;"""
+        with  self.__getConnection() as con:
+            if con is None:
+                return
+            try:
+                con.execute(query, (username,))
+                con.commit()
+                self.logger.info(f"User '{username}' logged out.")
+                return
+            except sql3.Error as e:
+                self.logger.info(f"Error logging out user ID '{username}': {e}")
                 return
 
     def check_user_login_by_auth_key(self, auth_key: str) -> bool:
@@ -292,7 +340,7 @@ class ServerDB:
                 cur = con.execute(query, (auth_key,))
                 check = cur.fetchone()
             except sql3.Error as e:
-                server_logger.info(f"Error checking login by auth key {auth_key}: {e}")
+                self.logger.info(f"Error checking login by auth key {auth_key}: {e}")
                 return False
         if check:
             login_time = datetime.datetime.fromisoformat(check[1])
@@ -311,13 +359,13 @@ def main():
 
     # Example usage
     # db.add_user_logged_in(1, "auth_key_12345")
-    # server_logger.info(db.get_user_by_username("ehsan"))
-    # server_logger.info(db.get_user_by_username("mohammad"))
-    # server_logger.info(db.get_user_by_id(1))
-    # server_logger.info(db.validate_user("ehsan", "12345"))
-    # server_logger.info(db.get_user_by_login_key("auth_key_12345"))
-    # server_logger.info(db.check_user_logged_in(1))
-    # server_logger.info(db.check_user_login_by_auth_key("auth_key_12345"))
+    # self.logger.info(db.get_user_by_username("ehsan"))
+    # self.logger.info(db.get_user_by_username("mohammad"))
+    # self.logger.info(db.get_user_by_id(1))
+    # self.logger.info(db.validate_user("ehsan", "12345"))
+    # self.logger.info(db.get_user_by_login_key("auth_key_12345"))
+    # self.logger.info(db.check_user_logged_in(1))
+    # self.logger.info(db.check_user_login_by_auth_key("auth_key_12345"))
 
 
 if __name__ == "__main__":
