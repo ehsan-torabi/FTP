@@ -33,7 +33,7 @@ class FTPClient(cmd.Cmd):
     intro = 'Welcome to the FTP client. Type help or ? to list commands.'
     prompt = '(ftp) '
 
-    def __init__(self, user_socket,server_addrs):
+    def __init__(self, user_socket, server_addrs):
         super().__init__()
         self.user_socket = user_socket
         auth_token, access_path = login_handler(self.user_socket)
@@ -171,7 +171,7 @@ class FTPClient(cmd.Cmd):
             transmit_buffer_size = int(response["data"]["buffer_size"])
             checksum = response["data"]["checksum"]
             print(self.server_addr)
-            transmit_result = receive_file.retrieve_file(self.server_addr,dir_path, transmit_port, filename, filesize,
+            transmit_result = receive_file.retrieve_file(self.server_addr, dir_path, transmit_port, filename, filesize,
                                                          transmit_buffer_size, checksum)
             if transmit_result:
                 print("File downloaded successfully")

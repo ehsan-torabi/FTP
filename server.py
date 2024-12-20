@@ -7,7 +7,7 @@ from Server.server_command import command_parser
 
 
 class Server:
-    def __init__(self,ip, port):
+    def __init__(self, ip, port):
         self.port = int(port)
         self.ip = str(ip)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,7 +46,7 @@ class Server:
                     data = conn.recv(4096)
                     if not data:
                         break
-                    
+
                     command_parser(data, conn, addr)
                 except ConnectionResetError:
                     server_logger.info(f"[-] Connection reset by {addr}")
@@ -59,14 +59,14 @@ class Server:
         self.sock.close()
 
 
-def main(ip="127.0.0.1",port=8021):
-    server = Server(ip,port)
+def main(ip="127.0.0.1", port=8021):
+    server = Server(ip, port)
     server.start()
     server.accept_connections()
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 3:
-        main(sys.argv[1],int(sys.argv[2]))
+        main(sys.argv[1], int(sys.argv[2]))
     else:
         main()

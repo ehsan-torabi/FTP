@@ -11,7 +11,7 @@ BUFFER_SIZE = 4096
 MAX_PORT_ATTEMPTS = 100  # Limit port binding attempts
 
 
-def create_transmit_socket(server_addr:str,max_attempts: int = MAX_PORT_ATTEMPTS) -> Tuple[socket.socket, int]:
+def create_transmit_socket(server_addr: str, max_attempts: int = MAX_PORT_ATTEMPTS) -> Tuple[socket.socket, int]:
     """
     Create a socket and bind to a random available port.
 

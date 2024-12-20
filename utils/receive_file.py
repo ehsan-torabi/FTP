@@ -9,7 +9,7 @@ DELIMITER = '<SEPARATOR>'
 
 
 def retrieve_file(
-        socket_addr:str,
+        socket_addr: str,
         file_path: str,
         transmit_port: int,
         file_name: str,

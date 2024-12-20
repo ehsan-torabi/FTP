@@ -1,8 +1,7 @@
-import json
-import os
+from cmd import Cmd
 
 from Server.db_manage import ServerDB
-from cmd import Cmd
+
 
 class ServerManage(Cmd):
     def __init__(self):
@@ -101,6 +100,7 @@ class ServerManage(Cmd):
     def do_quit(self):
         """Exit the command loop."""
         exit(0)
+
 
 if __name__ == '__main__':
     server = ServerManage()
