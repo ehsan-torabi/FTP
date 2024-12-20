@@ -100,6 +100,10 @@ class ServerManage(Cmd):
     def do_quit(self):
         """Exit the command loop."""
         exit(0)
+    
+    def exit_program(self):
+        """Exit the command loop."""
+        exit(0)
 
 
 if __name__ == '__main__':
