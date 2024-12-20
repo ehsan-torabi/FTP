@@ -22,7 +22,7 @@ management.
 - Object-Oriented Programming
 - File System Operations
 - Bcrypt password-hashing function
-- SHA-256 checksum
+- MD5 checksum
 
 ## Installation
 
