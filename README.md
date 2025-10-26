@@ -28,7 +28,7 @@ management.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/EhsanT0rabi/FTP
+   git clone https://github.com/ehsan-torabi/FTP
    cd FTP
    ```
 
